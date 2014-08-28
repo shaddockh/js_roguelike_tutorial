@@ -1,36 +1,69 @@
 /*global $*/
-module.exports.run = function () {
-  var ROT = require('rot-js').ROT;
 
+//NOTE: This is a singleton
+
+var ROT = require('rot-js').ROT;
+var _display = null,
+  _currentScreen = null;
+
+var Game = {};
+Game.config = require('./gameconfig');
+
+function bindEventToScreen(event) {
+  window.addEventListener(event, function (e) {
+    // When an event is received, send it to the
+    // screen if there is one
+    if (_currentScreen !== null) {
+      // Send the event type and data to the screen
+      _currentScreen.handleInput(event, e);
+    }
+  });
+}
+
+Game.init = function () {
+  _display = new ROT.Display({
+    width: Game.config.dimensions.width,
+    height: Game.config.dimensions.height
+  });
+  // Bind keyboard input events
+  bindEventToScreen('keydown');
+  bindEventToScreen('keyup');
+  bindEventToScreen('keypress');
+};
+
+Game.getDisplay = function () {
+  return _display;
+};
+
+Game.canRun = function () {
   // Check if rot.js can work on this browser
   if (!ROT.isSupported()) {
     alert("The rot.js library isn't supported by your browser.");
-    return;
+    return false;
+  }
+  return true;
+};
+
+Game.switchScreen = function (screen) {
+
+  if (typeof(screen) == 'string') {
+    screen = require(screen);
   }
 
-  // Create a display 80 characters wide and 20 characters tall
-  var display = new ROT.Display({
-    width: 80,
-    height: 20
-  });
-  var container = display.getContainer();
-  // Add the container to our HTML page
-  document.body.appendChild(container);
-
-  var foreground, background, colors;
-  for (var i = 0; i < 15; i++) {
-    // Calculate the foreground color, getting progressively darker
-    // and the background color, getting progressively lighter.
-    foreground = ROT.Color.toRGB([
-      255 - (i * 20),
-      255 - (i * 20),
-      255 - (i * 20)
-    ]);
-    background = ROT.Color.toRGB([i * 20, i * 20, i * 20]);
-    // Create the color format specifier.
-    colors = "%c{" + foreground + "}%b{" + background + "}";
-    // Draw the text at col 2 and row i
-    display.drawText(2, i, colors + "Hello, world!");
+  // If we had a screen before, notify it that we exited
+  if (_currentScreen !== null) {
+    _currentScreen.exit();
+  }
+  // Clear the display
+  Game.getDisplay().clear();
+  // Update our current screen, notify it we entered
+  // and then render it
+  _currentScreen = screen;
+  if (_currentScreen !== null) {
+    _currentScreen.enter();
+    _currentScreen.render(_display);
   }
 
 };
+
+module.exports = Game;

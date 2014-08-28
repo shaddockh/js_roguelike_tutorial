@@ -12,3 +12,11 @@ Tutorial 01
 * converted to using Browserify for dependencies
 * switched to using the npm version of rot-js ( https://github.com/blinkdog/rot.js )
 
+Tutorial 02
+====
+* Normal Tutorial 2 stuff
+* Instead of having a screen object with all the screens, I have each screen as it's own file in assets/screens directory
+* Launching a screen is handled by 'requiring' the screen and passing it to the switch screen function
+* added a gameconfig.js that currently just contains the screen dimensions
+* gameconfig is accessible from Game.config
+* TODO: may create an array of screens in the Game object that auto-loads each screen..not sure yet.

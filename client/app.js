@@ -1,7 +1,13 @@
 (function ($) {
   window.$ = $;
   $(document).ready(function () {
-    var game = require('./assets/game');
-    game.run();
+    var Game = require('./assets/game');
+    if (Game.canRun()) {
+      Game.init();
+      // Add the container to our HTML page
+      document.body.appendChild(Game.getDisplay().getContainer());
+      // Load the start screen
+      Game.switchScreen(require('./assets/screens/startScreen'));
+    }
   });
 })(require('jquery/dist/jquery.min'));
