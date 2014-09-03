@@ -16,23 +16,34 @@ function bindEventToScreen(event) {
     if (_currentScreen !== null) {
       // Send the event type and data to the screen
       _currentScreen.handleInput(event, e);
+      // Clear the screen
+      _display.clear();
+      // Render the screen
+      _currentScreen.render(_display);
     }
   });
 }
 
 Game.init = function () {
   _display = new ROT.Display({
-    width: Game.config.dimensions.width,
-    height: Game.config.dimensions.height
+    width: Game.config.screenWidth,
+    height: Game.config.screenHeight
   });
   // Bind keyboard input events
   bindEventToScreen('keydown');
-  bindEventToScreen('keyup');
-  bindEventToScreen('keypress');
+  //bindEventToScreen('keyup');
+  //bindEventToScreen('keypress');
 };
 
 Game.getDisplay = function () {
   return _display;
+};
+
+Game.getScreenWidth = function () {
+  return Game.config.screenWidth;
+};
+Game.getScreenHeight = function () {
+  return Game.config.screenHeight;
 };
 
 Game.canRun = function () {
@@ -46,7 +57,7 @@ Game.canRun = function () {
 
 Game.switchScreen = function (screen) {
 
-  if (typeof(screen) == 'string') {
+  if (typeof (screen) === 'string') {
     screen = require(screen);
   }
 

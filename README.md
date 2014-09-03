@@ -20,3 +20,14 @@ Tutorial 02
 * added a gameconfig.js that currently just contains the screen dimensions
 * gameconfig is accessible from Game.config
 * TODO: may create an array of screens in the Game object that auto-loads each screen..not sure yet.
+
+Tutorial 03
+====
+* Normal Tutorial 3 stuff
+* TODO: Make revealing module pattern on all screens
+* TODO: hang everything off Game
+* TODO: add screenManager to game object, have it load screens via config entries
+* Made a base screen and extended it for each screen
+* moved the logic from the playscreen that generates the world to a separate worldbuilder class to mimic the Java tutorial
+* modified the key bindings to also allow Vi style movement keys
+* created a CellularAutomataWorldBuilder object

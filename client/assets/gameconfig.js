@@ -1,7 +1,4 @@
 module.exports = {
-
- dimensions : {
-    width: 80,
-    height: 24
- }
+  screenWidth: 80,
+  screenHeight: 24
 };

@@ -1,6 +1,6 @@
 module.exports = function (grunt) {
 
-  var scriptdirs = ['client/assets/*.js', 'client/*.js', 'client/scripts/**/*.js', 'test/**/*.js'];
+  var scriptdirs = ['client/**/*.js', 'client/scripts/**/*.js', 'test/**/*.js'];
 
   grunt.initConfig({
     pkg: grunt.file.readJSON('package.json'),
