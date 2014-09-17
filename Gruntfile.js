@@ -28,7 +28,16 @@ module.exports = function (grunt) {
     browserify: {
       dist: {
         files: {
-          'dist/app.js': scriptdirs
+          'dist/app.js': ['bower_components/**/*.js'].concat(scriptdirs)
+        },
+        options: {
+          shim: {
+            rot: {
+              path: "bower_components/rot.js/rot.js",
+              exports: "ROT"
+            }
+          },
+          transform: ['debowerify']
         }
       },
       all: {
@@ -36,11 +45,11 @@ module.exports = function (grunt) {
         dest: 'dist/app.js'
       },
       debug: {
-        src: ['client/app.js', 'bower_components/bootstrap/dist/js/bootstrap.min.js'],
+        src: ['client/app.js', 'bower_components/**/*.js'],
         dest: 'dist/app.js',
         options: {
-          debug: true
-          //transform: ['debowerify']
+          debug: true,
+          transform: ['debowerify']
         }
       }
     },

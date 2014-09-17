@@ -1,4 +1,4 @@
-var ROT = require('rot-js').ROT;
+var ROT = require('../rot');
 
 var winScreen = require('./basescreen')("Win");
 

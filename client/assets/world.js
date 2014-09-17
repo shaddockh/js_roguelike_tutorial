@@ -29,4 +29,24 @@ World.prototype.getTile = function (x, y) {
   }
 };
 
+World.prototype.dig = function (x, y) {
+  // If the tile is diggable, update it to a floor
+  if (this.getTile(x, y).isDiggable()) {
+    this._tiles[x][y] = Tile.floorTile;
+  }
+};
+
+World.prototype.getRandomFloorPosition = function () {
+  // Randomly generate a tile which is a floor
+  var x, y;
+  do {
+    x = Math.floor(Math.random() * this.getWidth());
+    y = Math.floor(Math.random() * this.getHeight());
+  } while (this.getTile(x, y) !== Tile.floorTile);
+  return {
+    x: x,
+    y: y
+  };
+};
+
 module.exports = World;

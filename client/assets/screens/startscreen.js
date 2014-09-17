@@ -1,5 +1,5 @@
 var Game = require('../game');
-var ROT = require('rot-js').ROT;
+var ROT = require('../rot');
 var gameconfig = require('../gameconfig');
 
 var startScreen = require('./basescreen')('Start');

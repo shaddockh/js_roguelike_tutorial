@@ -1,14 +1,31 @@
-var Tile = function (glyph) {
-  this._glyph = glyph;
+var Glyph = require('./glyph');
+var Tile = function (properties) {
+  properties = properties || {};
+  Glyph.call(this, properties);
+  this._isWalkable = properties.isWalkable || false;
+  this._isDiggable = properties.isDiggable || false;
+};
+Tile.extend(Glyph);
+
+Tile.prototype.isWalkable = function () {
+  return this._isWalkable;
 };
 
-Tile.prototype.getGlyph = function () {
-  return this._glyph;
+Tile.prototype.isDiggable = function () {
+  return this._isDiggable;
 };
 
 var Glyph = require('./glyph');
-Tile.nullTile = new Tile(new Glyph());
-Tile.floorTile = new Tile(new Glyph('.'));
-Tile.wallTile = new Tile(new Glyph('#', 'goldenrod'));
+Tile.nullTile = new Tile();
+Tile.floorTile = new Tile({
+  character: '.',
+  isWalkable: true
+});
+
+Tile.wallTile = new Tile({
+  character: '#',
+  foreground: 'goldenrod',
+  isDiggable: true
+});
 
 module.exports = Tile;

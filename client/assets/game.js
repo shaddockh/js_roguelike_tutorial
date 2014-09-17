@@ -2,7 +2,7 @@
 
 //NOTE: This is a singleton
 
-var ROT = require('rot-js').ROT;
+var ROT = require('./rot');
 var _display = null,
   _currentScreen = null;
 

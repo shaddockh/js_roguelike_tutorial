@@ -31,3 +31,7 @@ Tutorial 03
 * moved the logic from the playscreen that generates the world to a separate worldbuilder class to mimic the Java tutorial
 * modified the key bindings to also allow Vi style movement keys
 * created a CellularAutomataWorldBuilder object
+* switched over to Bower to pull rot.js so we can get latest
+** had to build a rot.js shim that can be used as a commonjs interface to the bower rot.js
+** TODO: need to come up with a better build pattern for bower components
+* Started adding in support for the blueprint manager (along with additional development of entity-blueprint system)
