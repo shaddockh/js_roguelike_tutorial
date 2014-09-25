@@ -32,6 +32,7 @@ playScreen.enter = function () {
 //  exit: function () {
 //    console.log("Exited play screen.");
 //  },
+var vsprintf = require('sprintf-js').vsprintf;
 playScreen.render = function (display) {
 
   var screenWidth = Game.getScreenWidth();
@@ -45,6 +46,7 @@ playScreen.render = function (display) {
   // Make sure we still have enough space to fit an entire game screen
   topLeftY = Math.min(topLeftY, world.getHeight() - screenHeight);
 
+  //TODO: move this out?
   // Iterate through all visible map cells
   for (var x = topLeftX; x < topLeftX + screenWidth; x++) {
     for (var y = topLeftY; y < topLeftY + screenHeight; y++) {
@@ -55,25 +57,34 @@ playScreen.render = function (display) {
     }
   }
 
+  //TODO: move this out?
   // Render the entities
   var entities = world.getEntities();
-  for (var i = 0; i < entities.length; i++) {
-    var entity = entities[i];
-    // Only render the entitiy if they would show up on the screen
+  entities.forEach(function (entity) {
+    // Only render the entity if they would show up on the screen
     if (entity.getX() >= topLeftX && entity.getY() >= topLeftY &&
       entity.getX() < topLeftX + screenWidth &&
       entity.getY() < topLeftY + screenHeight) {
       entity.draw(display, entity.getX() - topLeftX, entity.getY() - topLeftY);
     }
-  }
+  });
 
-  // Render the player
-  //player.draw(
-  //display,
-  //player.getX() - topLeftX,
-  //player.getY() - topLeftY
-  //);
+  // Get the messages in the player's queue and render them
+  var messageY = 0;
+  var messages = player.getMessages();
+  messages.forEach(function (message) {
+    // Draw each message, adding the number of lines
+    messageY += display.drawText(
+      0,
+      messageY,
+      '%c{white}%b{black}' + message
+    );
+  });
 
+  // Render player HP
+  var stats = '%c{white}%b{black}';
+  stats += vsprintf('HP: %d/%d ', [player.getHp(), player.getMaxHp()]);
+  display.drawText(0, screenHeight, stats);
 };
 
 playScreen.move = function (dX, dY) {

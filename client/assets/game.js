@@ -29,7 +29,7 @@ function bindEventToScreen(event) {
 Game.init = function () {
   _display = new ROT.Display({
     width: Game.config.screenWidth,
-    height: Game.config.screenHeight
+    height: Game.config.screenHeight + 1
   });
   // Bind keyboard input events
   bindEventToScreen('keydown');
@@ -83,6 +83,35 @@ Game.switchScreen = function (screen) {
     Game.refresh();
   }
 
+};
+
+var vsprintf = require('sprintf-js').vsprintf;
+Game.sendMessage = function (recipient, message, args) {
+  // Make sure the recipient can receive the message
+  // before doing any work.
+  if (recipient.hasMixin('MessageRecipient')) {
+    // If args were passed, then we format the message, else
+    // no formatting is necessary
+    if (args) {
+      message = vsprintf(message, args);
+    }
+    recipient.receiveMessage(message);
+  }
+};
+
+Game.sendMessageNearby = function (map, centerX, centerY, radius, message, args) {
+  // If args were passed, then we format the message, else
+  // no formatting is necessary
+  if (args) {
+    message = vsprintf(message, args);
+  }
+  // Get the nearby entities
+  var entities = map.getEntitiesWithinRadius(centerX, centerY, radius);
+  // Iterate through nearby entities, sending the message if
+  // they can receive it.
+  entities.forEach(function (entity) {
+    Game.sendMessage(entity, message);
+  });
 };
 
 module.exports = Game;

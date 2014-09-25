@@ -27,26 +27,35 @@ var Entity = function (blueprint) {
 // Make entities inherit all the functionality from glyphs
 Entity.extend(Glyph);
 
+var noCopyList = {
+  init: true,
+  name: true,
+  doc: true,
+  type: true,
+  obsolete: true
+};
+
 Entity.prototype.attachMixin = function (mixin, blueprint) {
+
+  // Copy over all properties from each mixin as long
+  // as it's not the name or the init property. We
+  // also make sure not to override a property that
+  // already exists on the entity.
+  for (var key in mixin) {
+    if (!noCopyList[key]) {
+      if (this.hasOwnProperty(key)) {
+        console.error(this.getName() + ': Conflict attaching mixin property: ' + mixin.name + '.' + key + ' - property/method already exists.', this._attachedMixins);
+      } else {
+        this[key] = mixin[key];
+      }
+    }
+  }
 
   //add the name of this mixin to our attached mixins
   this._attachedMixins[mixin.name.toUpperCase()] = true;
   //if a group name is present, add it
   if (mixin.type) {
     this._attachedMixins[mixin.type.toUpperCase()] = true;
-  }
-  // Copy over all properties from each mixin as long
-  // as it's not the name or the init property. We
-  // also make sure not to override a property that
-  // already exists on the entity.
-  for (var key in mixin) {
-    if (key !== 'init' && key !== 'name') {
-      if (this.hasOwnProperty(key)) {
-        console.error('Conflict attaching mixin property: ' + key + ' from mixin: ' + mixin.name + ' already exists!');
-      } else {
-        this[key] = mixin[key];
-      }
-    }
   }
 
   // Finally call the init function if there is one

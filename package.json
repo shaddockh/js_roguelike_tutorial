@@ -29,20 +29,15 @@
     "grunt-mocha": "latest",
     "grunt-mocha-test": "latest",
     "matchdep": "latest",
-    "should": "latest"
-  },
-  "dependencies": {
-    "debowerify": "^0.8.1",
-    "grunt": "latest",
-    "grunt-browserify": "latest",
-    "entity-blueprint-manager": "^0.1.0"
-  },
-  "browserify": {
-    "transform": [
-        "debowerify"
-    ]
+    "should": "latest",
+    "sprintf-js": "0.0.7"
   },
   "dependencies": {
     "jquery": "latest"
+  },
+  "browserify": {
+    "transform": [
+      "debowerify"
+    ]
   }
 }

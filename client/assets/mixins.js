@@ -14,9 +14,10 @@ Mixins.Aspect = {
   obsolete: false,
   type: 'Aspect',
   init: function (blueprint) {
-    this.character = blueprint.character;
-    this.foreground = blueprint.foreground;
-    this.background = blueprint.background;
+    this._character = blueprint.character;
+    this._foreground = blueprint.foreground;
+    this._background = blueprint.background;
+    this._screenName = blueprint.screenName;
   },
   draw: function (display, x, y) {
     display.draw(
@@ -27,14 +28,18 @@ Mixins.Aspect = {
     );
   },
   getChar: function () {
-    return this.character;
+    return this._character;
   },
   getForeground: function () {
-    return this.foreground;
+    return this._foreground;
   },
   getBackground: function () {
-    return this.background;
+    return this._background;
+  },
+  getScreenName: function () {
+    return this._screenName;
   }
+
 };
 
 // Define our Moveable mixin
@@ -120,6 +125,7 @@ Mixins.PlayerActor = {
     //lock the engine and wait asynchronously
     //for the player to press a key
     this.getMap().getEngine().lock();
+    this.clearMessages();
   }
 };
 
@@ -155,7 +161,10 @@ Mixins.FungusActor = {
             entity.setY(this.getY() + yOffset);
             this.getMap().addEntity(entity);
             this._growthsRemaining--;
-            console.log('Spawned!!');
+            // Send a message nearby!
+            Game.sendMessageNearby(this.getMap(),
+              entity.getX(), entity.getY(), 5,
+              'The fungus is spreading!');
           }
         }
       }
@@ -168,32 +177,83 @@ Mixins.Destructible = {
   type: 'Destructible',
   doc: 'Takes damage',
   init: function (blueprint) {
-    this._hp = blueprint.hp || 1;
+    this._maxHp = blueprint.maxHp || 10;
+    this._hp = blueprint.hp || this._maxHp;
+    this._defenseValue = blueprint.defenseValue || 0;
   },
   takeDamage: function (attacker, damage) {
     this._hp -= damage;
     // If have 0 or less HP, then remove ourseles from the map
     if (this._hp <= 0) {
+      Game.sendMessage(attacker, 'You kill the %s!', [this.getScreenName()]);
+      Game.sendMessage(this, 'You die!');
       this.getMap().removeEntity(this);
     }
   },
   getHp: function () {
     return this._hp;
   },
-  setHp: function (hp) {
-    this._hp = hp;
+  setHp: function (value) {
+    this._hp = value;
+  },
+  getMaxHp: function () {
+    return this._maxHp;
+  },
+  setMaxHp: function (value) {
+    this._maxHp = value;
+  },
+  getDefenseValue: function () {
+    return this._defenseValue;
+  },
+  setDefenseValue: function (value) {
+    this._defenseValue = value;
   }
 };
 
-Mixins.SimpleAttacker = {
-  name: 'SimpleAttacker',
+Mixins.Attacker = {
+  name: 'Attacker',
   type: 'Attacker',
-  doc: 'Simple attacker',
+  doc: 'Attacker',
+  init: function (blueprint) {
+    this._attackValue = blueprint.attackValue || 1;
+  },
+  getAttackValue: function () {
+    return this._attackValue;
+  },
+  setAttackValue: function (value) {
+    this._attackValue = value;
+  },
   attack: function (target) {
     // Only remove the entity if they were attackable
     if (target.hasMixin('Destructible')) {
-      target.takeDamage(this, 1);
+      var attack = this.getAttackValue();
+      var defense = target.getDefenseValue();
+      var max = Math.max(0, attack - defense);
+      var damage = 1 + Math.floor(Math.random() * max);
+
+      Game.sendMessage(this, 'You strike the %s for %d damage!', [target.getScreenName(), damage]);
+      Game.sendMessage(target, 'The %s strikes you for %d damage!', [this.getScreenName(), damage]);
+
+      target.takeDamage(this, damage);
     }
+  }
+};
+
+Mixins.MessageRecipient = {
+  name: 'MessageRecipient',
+  type: 'MessageRecipient',
+  doc: 'Can display messages to the screen',
+  init: function (blueprint) {
+    this._messages = [];
+  },
+  receiveMessage: function (message) {
+    this._messages.push(message);
+  },
+  getMessages: function () {
+    return this._messages;
+  },
+  clearMessages: function () {
+    this._messages = [];
   }
 };
 

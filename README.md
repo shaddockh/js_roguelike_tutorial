@@ -53,3 +53,9 @@ Tutorial 05
 * TODO: look into the browserify plugin that converts a directory of files to a single JSON object (for entities and blueprints)
 
 
+Tutorial 06
+===
+* Normal Tutorial 6 stuff
+
+
+

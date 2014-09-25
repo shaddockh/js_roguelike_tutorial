@@ -38,6 +38,27 @@ World.prototype.getEntityAt = function (x, y) {
   return false;
 };
 
+World.prototype.getEntitiesWithinRadius = function (centerX, centerY, radius) {
+  var results = [];
+  // Determine our bounds
+  var leftX = centerX - radius;
+  var rightX = centerX + radius;
+  var topY = centerY - radius;
+  var bottomY = centerY + radius;
+
+  // Iterate through our entities, adding any which are within the bounds
+  this._entities.forEach(function (entity) {
+    if (entity.getX() >= leftX &&
+      entity.getX() <= rightX &&
+      entity.getY() >= topY &&
+      entity.getY() <= bottomY) {
+      results.push(entity);
+    }
+  });
+
+  return results;
+};
+
 // Standard getters
 World.prototype.getWidth = function () {
   return this._width;

@@ -3,7 +3,10 @@ Blueprints.Actor = {
   inherits: '_base',
   name: 'Actor',
   Position: {},
-  Moveable: {}
+  Moveable: {},
+  Aspect: {
+    screenName: 'Actor'
+  }
 };
 
 // Player template
@@ -13,13 +16,17 @@ Blueprints.PlayerTemplate = {
   Aspect: {
     character: '@',
     foreground: 'white',
-    background: 'black'
+    background: 'black',
+    screenName: 'Player'
   },
   PlayerActor: {},
-  SimpleAttacker: {},
+  Attacker: {
+    attackValue: 10
+  },
   Destructible: {
-    hp: 10
-  }
+    maxHp: 40
+  },
+  MessageRecipient: {}
 };
 
 Blueprints.FungusTemplate = {
@@ -28,10 +35,13 @@ Blueprints.FungusTemplate = {
   Aspect: {
     character: 'F',
     foreground: 'green',
-    background: 'black'
+    background: 'black',
+    screenName: 'Fungus'
   },
   FungusActor: {},
-  Destructible: {}
+  Destructible: {
+    maxHp: 10
+  }
 };
 
 module.exports = Blueprints;
