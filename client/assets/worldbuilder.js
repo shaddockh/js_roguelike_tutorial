@@ -88,3 +88,31 @@ var UniformWorldBuilder = function (width, height) {
 };
 
 module.exports.Uniform = UniformWorldBuilder;
+
+var FungusLevelBuilder = function () {
+  var width = 100,
+    height = 48;
+  var bldr = {};
+
+  bldr.build = function () {
+    var BlueprintCatalog = require('./entities').BlueprintCatalog;
+    var Entity = require('./entity');
+
+    var builder = new CellularAutomataWorldBuilder(width, height)
+      .smooth(3)
+      .randomizeTiles();
+
+    // Create our map from the tiles
+    var world = builder.build();
+    // add random fungi
+    var fungus = BlueprintCatalog.getBlueprint('FungusTemplate');
+    for (var i = 0; i < 50; i++) {
+      world.addEntityAtRandomPosition(new Entity(fungus));
+    }
+    return world;
+  };
+
+  return bldr;
+};
+
+module.exports.FungusLevel = FungusLevelBuilder;

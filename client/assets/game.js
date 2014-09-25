@@ -16,10 +16,12 @@ function bindEventToScreen(event) {
     if (_currentScreen !== null) {
       // Send the event type and data to the screen
       _currentScreen.handleInput(event, e);
-      // Clear the screen
-      _display.clear();
-      // Render the screen
-      _currentScreen.render(_display);
+      //// Clear the screen
+      //_display.clear();
+      //// Render the screen
+      //_currentScreen.render(_display);
+      //TODO: Remove
+      //Game.refresh();
     }
   });
 }
@@ -31,8 +33,14 @@ Game.init = function () {
   });
   // Bind keyboard input events
   bindEventToScreen('keydown');
+  Game.BlueprintCatalog = require('entity-blueprint-manager').BlueprintCatalog;
   //bindEventToScreen('keyup');
   //bindEventToScreen('keypress');
+};
+
+Game.refresh = function () {
+  _display.clear();
+  _currentScreen.render(_display);
 };
 
 Game.getDisplay = function () {
@@ -72,7 +80,7 @@ Game.switchScreen = function (screen) {
   _currentScreen = screen;
   if (_currentScreen !== null) {
     _currentScreen.enter();
-    _currentScreen.render(_display);
+    Game.refresh();
   }
 
 };

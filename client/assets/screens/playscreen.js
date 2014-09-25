@@ -8,7 +8,7 @@ var world = null,
   centerY = 0,
   player = null;
 
-var PlayerTemplate = require('../entities').PlayerTemplate;
+var BlueprintCatalog = require('../entities').BlueprintCatalog;
 var Entity = require('../entity');
 
 // Define our playing screen
@@ -17,22 +17,18 @@ playScreen.enter = function () {
 
   var WorldBuilder = require('../worldbuilder');
 
-  var levelWidth = 500,
-    levelHeight = 500;
-
-  var builder = WorldBuilder.CellularAutomata(levelWidth, levelHeight)
-    .smooth(3)
-    .randomizeTiles();
+  var builder = WorldBuilder.FungusLevel();
 
   // Create our map from the tiles
   world = builder.build();
 
   // Create our player and set the position
-  player = new Entity(PlayerTemplate);
-  var position = world.getRandomFloorPosition();
-  player.setX(position.x);
-  player.setY(position.y);
+  player = new Entity(BlueprintCatalog.getBlueprint('PlayerTemplate'));
+  world.addEntityAtRandomPosition(player);
+
+  world.getEngine().start();
 };
+
 //  exit: function () {
 //    console.log("Exited play screen.");
 //  },
@@ -48,28 +44,36 @@ playScreen.render = function (display) {
   var topLeftY = Math.max(0, player.getY() - (screenHeight / 2));
   // Make sure we still have enough space to fit an entire game screen
   topLeftY = Math.min(topLeftY, world.getHeight() - screenHeight);
+
   // Iterate through all visible map cells
   for (var x = topLeftX; x < topLeftX + screenWidth; x++) {
     for (var y = topLeftY; y < topLeftY + screenHeight; y++) {
       // Fetch the glyph for the tile and render it to the screen
       // at the offset position.
       var tile = world.getTile(x, y);
-      display.draw(
-        x - topLeftX,
-        y - topLeftY,
-        tile.getChar(),
-        tile.getForeground(),
-        tile.getBackground());
+      tile.draw(display, x - topLeftX, y - topLeftY);
     }
   }
+
+  // Render the entities
+  var entities = world.getEntities();
+  for (var i = 0; i < entities.length; i++) {
+    var entity = entities[i];
+    // Only render the entitiy if they would show up on the screen
+    if (entity.getX() >= topLeftX && entity.getY() >= topLeftY &&
+      entity.getX() < topLeftX + screenWidth &&
+      entity.getY() < topLeftY + screenHeight) {
+      entity.draw(display, entity.getX() - topLeftX, entity.getY() - topLeftY);
+    }
+  }
+
   // Render the player
-  display.draw(
-    player.getX() - topLeftX,
-    player.getY() - topLeftY,
-    player.getChar(),
-    player.getForeground(),
-    player.getBackground()
-  );
+  //player.draw(
+  //display,
+  //player.getX() - topLeftX,
+  //player.getY() - topLeftY
+  //);
+
 };
 
 playScreen.move = function (dX, dY) {
@@ -109,6 +113,8 @@ playScreen.handleInput = function (inputType, inputData) {
       playScreen.move(0, 1);
       break;
     }
+    // Unlock the engine
+    world.getEngine().unlock();
   }
 
 };
