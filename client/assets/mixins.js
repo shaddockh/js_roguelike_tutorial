@@ -1,4 +1,6 @@
 // Create our Mixins namespace
+var Singletons = require('./singletons');
+
 var Mixins = {};
 
 var BaseMixin = function (name, type) {
@@ -9,6 +11,94 @@ var BaseMixin = function (name, type) {
     init: function (blueprint) {}
   };
 };
+
+Mixins.Tile = {
+  name: 'Tile',
+  obsolete: false,
+  type: 'Tile',
+  init: function (blueprint) {
+    this._isDiggable = blueprint.isDiggable || false;
+    this._isWalkable = blueprint.isWalkable || false;
+  },
+  isWalkable: function () {
+    return this._isWalkable;
+  },
+  isDiggable: function () {
+    return this._isDiggable;
+  }
+};
+
+Mixins.Debug = {
+  name: 'Debug',
+  obsolete: false,
+  type: 'Debug',
+  doc: 'Turns on debug mode for entity',
+  init: function (blueprint) {
+    if (typeof (blueprint.isDebug) !== 'undefined') {
+      this._isDebug = blueprint.isDebug;
+    } else {
+      this._isDebug = false;
+    }
+  },
+  debugEnabled: function () {
+    //TODO: probably need to also look at a global DebugEnabled flag
+    return this._isDebug;
+  },
+  debug: function (msg, component) {
+    if (this.debugEnabled()) {
+      console.log(msg);
+    }
+  }
+};
+
+Mixins.Activateable = {
+  name: 'Activateable',
+  obsolete: false,
+  type: 'Activatable',
+  doc: 'Allows components to register for activate messages',
+  init: function (blueprint) {
+    this._registeredActivateCallbacks = [];
+  },
+  registerActivate: function (callback, activateMessageFilter) {
+    this._registeredActivateCallbacks.push(callback);
+  },
+  activate: function (activateMessage) {
+    console.log('activate called');
+    for (var i = 0; i < this._registeredActivateCallbacks.length; i++) {
+      this._registeredActivateCallbacks[i].call(this, activateMessage);
+    }
+  }
+};
+
+Mixins.Portal = {
+  name: 'Portal',
+  obsolete: false,
+  type: 'Portal',
+  doc: 'Moves player from one level to another level',
+  init: function (blueprint) {
+    this._targetLevel = blueprint.targetLevel || null;
+    this._targetX = blueprint.targetX || null;
+    this._targetY = blueprint.targetY || null;
+    if (this.hasMixin('Activateable')) {
+      this.registerActivate(this.activatePortal);
+    }
+  },
+  setPortalTarget: function (level, x, y) {
+    this._targetLevel = level;
+    this._targetX = x;
+    this._targetY = y;
+  },
+  activatePortal: function (activateMessage) {
+    //TODO: handle specific messages
+    console.log('TODO: Handle Portal Specific Messages ');
+    Singletons.World.getActiveLevel().removeEntity(Singletons.Player);
+    Singletons.World.setActiveLevel(this._targetLevel);
+    Singletons.World.getActiveLevel().addEntityAtPosition(Singletons.Player, this._targetX, this._targetY);
+    console.log('Switching to level: ' + this._targetLevel);
+
+  }
+};
+
 Mixins.Aspect = {
   name: 'Aspect',
   obsolete: false,
@@ -18,6 +108,7 @@ Mixins.Aspect = {
     this._foreground = blueprint.foreground;
     this._background = blueprint.background;
     this._screenName = blueprint.screenName;
+    this._blocksPath = blueprint.blocksPath || false;
   },
   draw: function (display, x, y) {
     display.draw(
@@ -38,6 +129,9 @@ Mixins.Aspect = {
   },
   getScreenName: function () {
     return this._screenName;
+  },
+  blocksPath: function () {
+    return this._blocksPath;
   }
 
 };
@@ -57,15 +151,21 @@ Mixins.Moveable = {
     if (target) {
       // If we are an attacker, try to attack
       // the target
-      if (this.hasMixin('Attacker')) {
-        this.attack(target);
-        return true;
-      } else {
-        // If not nothing we can do, but we can't
-        // move to the tile
-        return false;
+      if (target.hasMixin('aspect') && target.blocksPath()) {
+        if (this.hasMixin('Attacker')) {
+          this.attack(target);
+          return true;
+        } else {
+          // If not nothing we can do, but we can't
+          // move to the tile
+          return false;
+        }
       }
+      //else {
+      //send some kind of walkover message
+      //}
     }
+
     //entity there..can't walk
     if (tile.isWalkable()) {
       // Update the entity's position
@@ -108,6 +208,13 @@ Mixins.Position = {
   },
   getMap: function () {
     return this._map;
+  },
+  setPosition: function (x, y) {
+    this._x = x;
+    this._y = y;
+  },
+  isInBounds: function (x1, y1, x2, y2) {
+    return this.getX() >= x1 && this.getX() < x2 && this.getY() >= y1 && this.getY() < y2;
   }
 };
 
@@ -124,8 +231,16 @@ Mixins.PlayerActor = {
     Game.refresh();
     //lock the engine and wait asynchronously
     //for the player to press a key
-    this.getMap().getEngine().lock();
+    Singletons.World.getEngine().lock();
     this.clearMessages();
+  },
+  playerActivate: function (x, y, map, activateMessage) {
+    var entity = this.getMap().getEntityAt(x, y);
+    if (entity) {
+      if (entity.hasMixin('activateable')) {
+        entity.activate(activateMessage);
+      }
+    }
   }
 };
 
@@ -154,11 +269,8 @@ Mixins.FungusActor = {
           if (this.getMap().isEmptyFloor(this.getX() + xOffset,
             this.getY() + yOffset)) {
 
-            //TODO: flesh out template in constructor
-            var spawn = Game.BlueprintCatalog.getBlueprint(this._templateToSpawn);
-            var entity = new Entity(spawn);
-            entity.setX(this.getX() + xOffset);
-            entity.setY(this.getY() + yOffset);
+            var entity = new Entity(this._templateToSpawn);
+            entity.setPosition(this.getX() + xOffset, this.getY() + yOffset);
             this.getMap().addEntity(entity);
             this._growthsRemaining--;
             // Send a message nearby!

@@ -5,7 +5,8 @@ Blueprints.Actor = {
   Position: {},
   Moveable: {},
   Aspect: {
-    screenName: 'Actor'
+    screenName: 'Actor',
+    blocksPath: true
   }
 };
 
@@ -41,6 +42,23 @@ Blueprints.FungusTemplate = {
   FungusActor: {},
   Destructible: {
     maxHp: 10
+  }
+};
+
+Blueprints.Gizmo = {
+  inherits: '_base',
+  name: 'Gizmo',
+  position: {},
+  activateable: {}
+};
+
+Blueprints.StairsPortal = {
+  inherits: 'Gizmo',
+  name: 'StairsPortal',
+  portal: {
+    targetLevel: null,
+    targetX: null,
+    targetY: null
   }
 };
 

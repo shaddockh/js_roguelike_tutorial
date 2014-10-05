@@ -57,5 +57,31 @@ Tutorial 06
 ===
 * Normal Tutorial 6 stuff
 
+Tutorial 07
+===
+* Normal Tutorial 7 stuff
+* modified Entity constructor to take the name of a blueprint and it will look it up in the blueprint catalog
+* moved the routine that renders the map out of the playscreen and into the map prototype
+* refactored the tiles to use the blueprint system to allow for blueprint inheritance
+* created a new TileCatalog that has instances of each type of tile to be used to build the map
+* removed the Tile class since it's no longer used
+* created a Tile mixin that tiles all use
+* created a new tiles.js that defines the tiles
+* renamed the entities.js to singletons.js and added an initialize() export that is called at game startup.  This will load up all the mixins, the tiles, and the blueprints.
+* exposed TileCatalog, BlueprintCatalog, and MixinCatalog from the Singletons object
+* removed base class "Glyph" and all reliance on it...the mixin handler will handle building object by composition instead of inheritance
+* clean up Entity class to use the Dictionary object for holding on to mixin references
+* modify the builders to use blueprints to allow for configuring building a level
+* create a new LevelBuilder object that takes in a blueprint and returns a World object
+* refactored World to Level
+* implemented a new way of handling stairs by using a Portal mixin and having that mixin handle moving the player between levels
+* instead of having a single 3 dimensional array for levels, just have an array of Level objects
+* redid the way regions were determined and linked together between levels
+* created a new 'Portal' type of gizmo that will respond to an active message from the player and transport them between levels
+* created an activate subsystem that will send an activate to any entity on the current square if the player sends an activate keystroke (or if it's sent via another component)
+* TODO: need to filter activate messages in case there are specific messages that an activate needs to respond to
+* moved Player into Singletons so the player is accessed from everywhere
+* created new World singleton that contains all the levels
+* store each level by name in the world.  Levels will become active/inactive as the player traverses through them and the entities will be added/removed from the scheduler
 
 

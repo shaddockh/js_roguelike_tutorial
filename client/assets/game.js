@@ -3,6 +3,8 @@
 //NOTE: This is a singleton
 
 var ROT = require('./rot');
+var Singletons = require('./singletons');
+
 var _display = null,
   _currentScreen = null;
 
@@ -16,12 +18,6 @@ function bindEventToScreen(event) {
     if (_currentScreen !== null) {
       // Send the event type and data to the screen
       _currentScreen.handleInput(event, e);
-      //// Clear the screen
-      //_display.clear();
-      //// Render the screen
-      //_currentScreen.render(_display);
-      //TODO: Remove
-      //Game.refresh();
     }
   });
 }
@@ -33,9 +29,8 @@ Game.init = function () {
   });
   // Bind keyboard input events
   bindEventToScreen('keydown');
-  Game.BlueprintCatalog = require('entity-blueprint-manager').BlueprintCatalog;
-  //bindEventToScreen('keyup');
-  //bindEventToScreen('keypress');
+  bindEventToScreen('keypress');
+  Singletons.initialize();
 };
 
 Game.refresh = function () {
@@ -50,6 +45,7 @@ Game.getDisplay = function () {
 Game.getScreenWidth = function () {
   return Game.config.screenWidth;
 };
+
 Game.getScreenHeight = function () {
   return Game.config.screenHeight;
 };
@@ -112,6 +108,25 @@ Game.sendMessageNearby = function (map, centerX, centerY, radius, message, args)
   entities.forEach(function (entity) {
     Game.sendMessage(entity, message);
   });
+};
+
+Game.getNeighborPositions = function (x, y) {
+  var tiles = [];
+  // Generate all possible offsets
+  for (var dX = -1; dX < 2; dX++) {
+    for (var dY = -1; dY < 2; dY++) {
+      // Make sure it isn't the same tile
+      if (dX === 0 && dY === 0) {
+        continue;
+      }
+      tiles.push({
+        x: x + dX,
+        y: y + dY
+      });
+    }
+  }
+  //TODO: randomize is part of Rot.js
+  return tiles.randomize();
 };
 
 module.exports = Game;

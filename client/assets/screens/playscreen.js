@@ -1,5 +1,6 @@
 var Game = require('../game');
 var ROT = require('../rot');
+var Singletons = require('../singletons');
 
 var playScreen = require('./basescreen')('Play');
 
@@ -8,7 +9,6 @@ var world = null,
   centerY = 0,
   player = null;
 
-var BlueprintCatalog = require('../entities').BlueprintCatalog;
 var Entity = require('../entity');
 
 // Define our playing screen
@@ -17,16 +17,23 @@ playScreen.enter = function () {
 
   var WorldBuilder = require('../worldbuilder');
 
-  var builder = WorldBuilder.FungusLevel();
-
-  // Create our map from the tiles
-  world = builder.build();
-
+  //Build our level
+  world = WorldBuilder.WorldBuilder.buildWorld({});
   // Create our player and set the position
-  player = new Entity(BlueprintCatalog.getBlueprint('PlayerTemplate'));
-  world.addEntityAtRandomPosition(player);
-
+  player = Singletons.Player;
+  world.getActiveLevel().addEntityAtRandomPosition(player);
   world.getEngine().start();
+
+  function tryanims() {
+
+    // var nextChar = Tile.floorTile.getChar() === '.' ? '?' : '.';
+    //Tile.floorTile.setChar(nextChar);
+    //Game.refresh();
+    //setTimeout(tryanims, 1000);
+  }
+  //tryanims();
+  Game.refresh();
+
 };
 
 //  exit: function () {
@@ -35,39 +42,20 @@ playScreen.enter = function () {
 var vsprintf = require('sprintf-js').vsprintf;
 playScreen.render = function (display) {
 
+  var currentLevel = world.getActiveLevel();
   var screenWidth = Game.getScreenWidth();
   var screenHeight = Game.getScreenHeight();
   // Make sure the x-axis doesn't go to the left of the left bound
   var topLeftX = Math.max(0, player.getX() - (screenWidth / 2));
   // Make sure we still have enough space to fit an entire game screen
-  topLeftX = Math.min(topLeftX, world.getWidth() - screenWidth);
+  topLeftX = Math.min(topLeftX, currentLevel.getWidth() - screenWidth);
   // Make sure the y-axis doesn't above the top bound
   var topLeftY = Math.max(0, player.getY() - (screenHeight / 2));
   // Make sure we still have enough space to fit an entire game screen
-  topLeftY = Math.min(topLeftY, world.getHeight() - screenHeight);
+  topLeftY = Math.min(topLeftY, currentLevel.getHeight() - screenHeight);
 
-  //TODO: move this out?
-  // Iterate through all visible map cells
-  for (var x = topLeftX; x < topLeftX + screenWidth; x++) {
-    for (var y = topLeftY; y < topLeftY + screenHeight; y++) {
-      // Fetch the glyph for the tile and render it to the screen
-      // at the offset position.
-      var tile = world.getTile(x, y);
-      tile.draw(display, x - topLeftX, y - topLeftY);
-    }
-  }
-
-  //TODO: move this out?
-  // Render the entities
-  var entities = world.getEntities();
-  entities.forEach(function (entity) {
-    // Only render the entity if they would show up on the screen
-    if (entity.getX() >= topLeftX && entity.getY() >= topLeftY &&
-      entity.getX() < topLeftX + screenWidth &&
-      entity.getY() < topLeftY + screenHeight) {
-      entity.draw(display, entity.getX() - topLeftX, entity.getY() - topLeftY);
-    }
-  });
+  // Draw the current viewport
+  currentLevel.drawViewPort(display, topLeftX, topLeftY, topLeftX + screenWidth, topLeftY + screenHeight);
 
   // Get the messages in the player's queue and render them
   var messageY = 0;
@@ -91,7 +79,12 @@ playScreen.move = function (dX, dY) {
   var newX = player.getX() + dX;
   var newY = player.getY() + dY;
   // Try to move to the new cell
-  player.tryMove(newX, newY, world);
+  player.tryMove(newX, newY, world.getActiveLevel());
+};
+
+playScreen.userActivate = function (actionCode) {
+  console.log('userActivate');
+  player.playerActivate(player.getX(), player.getY(), world.getActiveLevel, actionCode);
 };
 
 playScreen.handleInput = function (inputType, inputData) {
@@ -123,10 +116,23 @@ playScreen.handleInput = function (inputType, inputData) {
     case ROT.VK_J:
       playScreen.move(0, 1);
       break;
+    default:
+      //not a valid key
+      return;
     }
-    // Unlock the engine
-    world.getEngine().unlock();
+  } else if (inputType === 'keypress') {
+    var keyChar = String.fromCharCode(inputData.charCode);
+    if (keyChar === '>') {
+      playScreen.userActivate('>');
+    } else if (keyChar === '<') {
+      playScreen.userActivate('<');
+    } else {
+      // Not a valid key
+      return;
+    }
   }
+  // Unlock the engine
+  world.getEngine().unlock();
 
 };
 

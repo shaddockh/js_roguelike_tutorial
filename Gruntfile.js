@@ -26,30 +26,35 @@ module.exports = function (grunt) {
       }
     },
     browserify: {
-      dist: {
-        files: {
-          'dist/app.js': ['bower_components/**/*.js'].concat(scriptdirs)
-        },
-        options: {
-          shim: {
-            rot: {
-              path: "bower_components/rot.js/rot.js",
-              exports: "ROT"
-            }
-          },
-          transform: ['debowerify']
-        }
-      },
+      //dist: {
+      //  files: {
+      //    'dist/app.js': ['bower_components/**/*.js'].concat(scriptdirs)
+      //  },
+      //  options: {
+      //    debug: true,
+      //    shim: {
+      //      rot: {
+      //        path: "bower_components/rot.js/rot.js",
+      //        exports: "ROT"
+      //      }
+      //    },
+      //    transform: ['debowerify', 'folderify']
+      //  }
+      //},
       all: {
         src: 'client/app.js',
-        dest: 'dist/app.js'
+        dest: 'dist/app.js',
+        options: {
+          debug: true,
+          transform: ['debowerify', 'folderify']
+        }
       },
       debug: {
         src: ['client/app.js', 'bower_components/**/*.js'],
         dest: 'dist/app.js',
         options: {
           debug: true,
-          transform: ['debowerify']
+          transform: ['debowerify', 'folderify']
         }
       }
     },
