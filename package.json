@@ -38,7 +38,8 @@
   },
   "browserify": {
     "transform": [
-      "debowerify"
+      "debowerify",
+      "folderify"
     ]
   }
 }

@@ -1,5 +1,5 @@
 // Create our Mixins namespace
-var Singletons = require('./singletons');
+var Singletons = require('./../singletons');
 
 var Mixins = {};
 
@@ -218,8 +218,8 @@ Mixins.Position = {
   }
 };
 
-var Game = require('./game');
-var Entity = require('./entity');
+var Game = require('./../game');
+var Entity = require('./../entity');
 
 Mixins.PlayerActor = {
   name: 'PlayerActor',

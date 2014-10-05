@@ -4,38 +4,24 @@ var TileCatalog = require('./tileCatalog');
 var World = require('./world');
 
 function initialize() {
-  var Mixins = require('./mixins');
-  var Tiles = require('./tiles');
-  var Blueprints = require('./blueprints');
+  var blueprintIndex = require('./blueprints/_blueprintIndex');
+  var mixinIndex = require('./mixins/_mixinIndex');
   var WorldBuilder = require('./worldbuilder');
-
   var Entity = require('./entity');
 
   //Load all the mixins
-  // World Builder Mixins
-  MixinCatalog.loadMixins(WorldBuilder.BuilderMixins, function (name, loaded, msg) {
-    console.log(msg);
-  });
-  // Entity Mixins
-  MixinCatalog.loadMixins(Mixins, function (name, loaded, msg) {
-    console.log(msg);
+  mixinIndex.forEach(function (mixinCollection) {
+    MixinCatalog.loadMixins(mixinCollection, function (name, loaded, msg) {
+      console.log(msg);
+    });
   });
 
-  //Load all the tiles
-  BlueprintCatalog.loadBlueprints(Tiles, function (name, loaded, msg) {
-    console.log(msg);
+  //Load all the blueprints
+  blueprintIndex.forEach(function (blueprintCollection) {
+    BlueprintCatalog.loadBlueprints(blueprintCollection, function (name, loaded, msg) {
+      console.log(msg);
+    });
   });
-
-  //Load all the builder blueprints
-  BlueprintCatalog.loadBlueprints(WorldBuilder.BuilderBlueprints, function (name, loaded, msg) {
-    console.log(msg);
-  });
-
-  //Load all the entity blueprints
-  BlueprintCatalog.loadBlueprints(Blueprints, function (name, loaded, msg) {
-    console.log(msg);
-  });
-
   //BlueprintCatalog.hydrateAllBlueprints();
 
   //Build the tile cache
@@ -45,6 +31,10 @@ function initialize() {
 
   module.exports.Player = new Entity('PlayerTemplate');
   module.exports.World = new World();
+
+  //var includeFolder = require('include-folder'),
+  //folder = includeFolder('./client/assets');
+  //console.log(folder);
 }
 
 module.exports.BlueprintCatalog = BlueprintCatalog;

@@ -85,5 +85,5 @@ Tutorial 07
 * moved Player into Singletons so the player is accessed from everywhere
 * created new World singleton that contains all the levels
 * store each level by name in the world.  Levels will become active/inactive as the player traverses through them and the entities will be added/removed from the scheduler
-
+* created specific directories for mixins and blueprints with an index on each that requires in the appropriate files.  The Singletons.initialize will now just require in the index and load the blueprints and mixins into the catalogs
 
