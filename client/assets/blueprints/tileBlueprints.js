@@ -3,7 +3,9 @@ var Tiles = {
   tile: {
     name: 'tile',
     inherits: '_base',
-    tile: {},
+    tile: {
+      blocksLight: true
+    },
     aspect: {}
   },
   nullTile: {
@@ -14,7 +16,8 @@ var Tiles = {
     name: 'walkableTile',
     inherits: 'tile',
     tile: {
-      isWalkable: true
+      isWalkable: true,
+      blocksLight: false
     }
   },
   floorTile: {
@@ -22,7 +25,7 @@ var Tiles = {
     inherits: 'walkableTile',
     aspect: {
       character: '.',
-      foreground: 'gray',
+      foreground: 'silver',
       screenName: 'floor'
     }
   },
@@ -52,7 +55,7 @@ var Tiles = {
     },
     aspect: {
       character: '#',
-      foreground: 'gray',
+      foreground: 'silver',
       screenName: 'wall'
     }
   }

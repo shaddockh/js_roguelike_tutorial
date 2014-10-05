@@ -12,22 +12,6 @@ var BaseMixin = function (name, type) {
   };
 };
 
-Mixins.Tile = {
-  name: 'Tile',
-  obsolete: false,
-  type: 'Tile',
-  init: function (blueprint) {
-    this._isDiggable = blueprint.isDiggable || false;
-    this._isWalkable = blueprint.isWalkable || false;
-  },
-  isWalkable: function () {
-    return this._isWalkable;
-  },
-  isDiggable: function () {
-    return this._isDiggable;
-  }
-};
-
 Mixins.Debug = {
   name: 'Debug',
   obsolete: false,
@@ -106,15 +90,17 @@ Mixins.Aspect = {
   init: function (blueprint) {
     this._character = blueprint.character;
     this._foreground = blueprint.foreground;
+    this._obscuredForeground = blueprint.obscuredForeground || 'dimGray';
     this._background = blueprint.background;
     this._screenName = blueprint.screenName;
     this._blocksPath = blueprint.blocksPath || false;
   },
-  draw: function (display, x, y) {
+  draw: function (display, x, y, options) {
+    options = options || {};
     display.draw(
       x, y,
       this.getChar(),
-      this.getForeground(),
+      options.outsideFOV ? this.getObscuredForeground() : this.getForeground(),
       this.getBackground()
     );
   },
@@ -123,6 +109,9 @@ Mixins.Aspect = {
   },
   getForeground: function () {
     return this._foreground;
+  },
+  getObscuredForeground: function () {
+    return this._obscuredForeground;
   },
   getBackground: function () {
     return this._background;
@@ -366,6 +355,18 @@ Mixins.MessageRecipient = {
   },
   clearMessages: function () {
     this._messages = [];
+  }
+};
+
+Mixins.Sight = {
+  name: 'Sight',
+  type: 'Sight',
+  doc: 'This signifies our entity possesses a field of vision of a given radius',
+  init: function (blueprint) {
+    this._sightRadius = blueprint.sightRadius || 5;
+  },
+  getSightRadius: function () {
+    return this._sightRadius;
   }
 };
 

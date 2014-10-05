@@ -3,24 +3,10 @@ var ROT = require('../rot');
 var Level = require('../level');
 var Game = require('../game');
 var Entity = require('../entity');
-
-function build2DArray(width, height, defaultValue) {
-
-  defaultValue = defaultValue || 0;
-  var arr = [];
-  for (var x = 0; x < width; x++) {
-    // Create the nested array for the y values
-    arr.push([]);
-    // Add all the tiles
-    for (var y = 0; y < height; y++) {
-      arr[x].push(defaultValue);
-    }
-  }
-  return arr;
-}
+var WorldBuilder = require('../worldbuilder');
 
 function buildTilesArray(width, height) {
-  return build2DArray(width, height, Singletons.TileCatalog.getItem('nullTile'));
+  return WorldBuilder.build2DArray(width, height, Singletons.TileCatalog.getItem('nullTile'));
 }
 
 var Mixins = {};
@@ -52,6 +38,25 @@ Mixins.LevelBuilder = {
     this._levelId = levelId;
   }
 
+};
+Mixins.FovBuilder = {
+  name: 'FOVBuilder',
+  doc: 'Field of View',
+  init: function (blueprint) {
+    this._fovTopology = blueprint.fovTopology || 8;
+  },
+  //TODO: need a better way
+  buildFOV: function () {
+    var level = this.getLevel();
+    var builder = this;
+
+    level.setFov(
+      new ROT.FOV.PreciseShadowcasting(function (x, y) {
+        return !level.getTile(x, y).getBlocksLight();
+      }, {
+        topology: builder._fovTopology
+      }));
+  }
 };
 
 Mixins.RegionBuilder = {
@@ -123,7 +128,7 @@ Mixins.RegionBuilder = {
 
   // This sets up the regions for a given depth level.
   setupRegions: function () {
-    this._regions = build2DArray(this.getWidth(), this.getHeight());
+    this._regions = WorldBuilder.build2DArray(this.getWidth(), this.getHeight());
     var region = 1;
     var tilesFilled;
     // Iterate through all tiles searching for a tile that

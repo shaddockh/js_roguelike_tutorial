@@ -1,4 +1,7 @@
 var Singletons = require('./singletons');
+var WorldBuilder = require('./worldbuilder');
+var ROT = require('./rot');
+
 //Correponds to "World" in the other tutorial
 
 var Level = function (tiles, levelId) {
@@ -11,6 +14,14 @@ var Level = function (tiles, levelId) {
   this._height = tiles[0].length;
 
   this._entities = [];
+  this._fov = null;
+  this._explored = WorldBuilder.build2DArray(this._width, this._height, false);
+  this.setFov(
+    new ROT.FOV.PreciseShadowcasting(function (x, y) {
+      return true;
+    }, {
+      topology: 4
+    }));
 
 };
 
@@ -44,12 +55,29 @@ Level.prototype.deactivate = function () {
 
 Level.prototype.drawViewPort = function (display, x1, y1, x2, y2) {
 
+  // This object will keep track of all visible map cells
+  var visibleCells = {};
+  var level = this;
+  // Find all visible cells and update the object
+  this.getFov().compute(
+    Singletons.Player.getX(), Singletons.Player.getY(),
+    Singletons.Player.getSightRadius(),
+    function (x, y, radius, visibility) {
+      visibleCells[x + "," + y] = true;
+      // Mark cell as explored
+      level.setExplored(x, y, true);
+    });
+
   for (var x = x1; x < x2; x++) {
     for (var y = y1; y < y2; y++) {
-      // Fetch the glyph for the tile and render it to the screen
-      // at the offset position.
-      var tile = this.getTile(x, y);
-      tile.draw(display, x - x1, y - y1);
+      if (this.isExplored(x, y)) {
+        // Fetch the glyph for the tile and render it to the screen
+        // at the offset position.
+        var tile = this.getTile(x, y);
+        tile.draw(display, x - x1, y - y1, {
+          outsideFOV: !visibleCells[x + ',' + y]
+        });
+      }
     }
   }
 
@@ -59,7 +87,9 @@ Level.prototype.drawViewPort = function (display, x1, y1, x2, y2) {
     // Only render the entity if they would show up on the screen
     if (entity.isInBounds(x1, y1, x2, y2)) {
       if (entity.hasMixin('aspect')) {
-        entity.draw(display, entity.getX() - x1, entity.getY() - y1);
+        if (visibleCells[entity.getX() + ',' + entity.getY()]) {
+          entity.draw(display, entity.getX() - x1, entity.getY() - y1);
+        }
       }
     }
   });
@@ -128,6 +158,14 @@ Level.prototype.setTile = function (x, y, tile) {
 
 Level.prototype.getTileArray = function () {
   return this._tiles;
+};
+
+Level.prototype.getFov = function () {
+  return this._fov;
+};
+
+Level.prototype.setFov = function (fovFunction) {
+  this._fov = fovFunction;
 };
 
 /**
@@ -233,6 +271,22 @@ Level.prototype.addEntityAtPosition = function (entity, x, y) {
 Level.prototype.addEntityAtRandomPosition = function (entity) {
   var position = this.getRandomFloorPosition();
   this.addEntityAtPosition(entity, position.x, position.y);
+};
+
+Level.prototype.setExplored = function (x, y, state) {
+  // Only update if the tile is within bounds
+  if (this.isInBounds(x, y)) {
+    this._explored[x][y] = state;
+  }
+};
+
+Level.prototype.isExplored = function (x, y) {
+  // Only return the value if within bounds
+  if (this.isInBounds(x, y)) {
+    return this._explored[x][y];
+  } else {
+    return false;
+  }
 };
 
 module.exports = Level;

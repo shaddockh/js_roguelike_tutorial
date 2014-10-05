@@ -14,6 +14,7 @@ Blueprints.FungusLevelBuilder = {
     width: 100,
     height: 100
   },
+  FovBuilder: {},
   CellularAutomataTerrainBuilder: {
     smoothness: 3
   },

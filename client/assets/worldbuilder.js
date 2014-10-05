@@ -4,6 +4,23 @@ var Singletons = require('./singletons');
 var Game = require('./game');
 var Entity = require('./entity');
 
+function build2DArray(width, height, defaultValue) {
+
+  defaultValue = defaultValue || 0;
+  var arr = [];
+  for (var x = 0; x < width; x++) {
+    // Create the nested array for the y values
+    arr.push([]);
+    // Add all the tiles
+    for (var y = 0; y < height; y++) {
+      arr[x].push(defaultValue);
+    }
+  }
+  return arr;
+}
+
+module.exports.build2DArray = build2DArray;
+
 /**
  * Builder for individual levels.  Build returns the levelbuilder
  */
@@ -18,6 +35,10 @@ var LevelBuilder = (function () {
 
     if (levelBuilder.hasMixin('TerrainBuilder')) {
       levelBuilder.buildTerrain();
+    }
+
+    if (levelBuilder.hasMixin('FOVBuilder')) {
+      levelBuilder.buildFOV();
     }
 
     if (levelBuilder.hasMixin('CreatureBuilder')) {

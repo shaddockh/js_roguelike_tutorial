@@ -87,3 +87,10 @@ Tutorial 07
 * store each level by name in the world.  Levels will become active/inactive as the player traverses through them and the entities will be added/removed from the scheduler
 * created specific directories for mixins and blueprints with an index on each that requires in the appropriate files.  The Singletons.initialize will now just require in the index and load the blueprints and mixins into the catalogs
 
+Tutorial 08 
+====
+* From: http://www.codingcookies.com/2013/08/25/building-a-roguelike-in-javascript-part-8a/
+* Normal Tutorial 8 stuff
+* Playing with the idea of moving the FOV algorithm into a separate builder.
+* modified aspect.draw to accept a options field with { outsideFOV: true|false } to determine if it should render with the obscuredForeground setting or not.
+* TODO: render entities, but have actors use the obscuredForeground valud of 'invisible' so they don't show up

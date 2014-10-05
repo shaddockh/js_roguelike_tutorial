@@ -27,6 +27,9 @@ Blueprints.PlayerTemplate = {
   Destructible: {
     maxHp: 40
   },
+  Sight: {
+    sightRadius: 6
+  },
   MessageRecipient: {}
 };
 
