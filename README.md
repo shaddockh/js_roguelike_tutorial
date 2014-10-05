@@ -7,6 +7,8 @@ Working through the roguelike tutorials at:
 
 As I work through the tutorial, I'll be making minor adjustments along the way and documenting them as I work through them
 
+Note that there is a dependency on my Entity-Blueprint-Manager repo that is under active development and not in NPM yet.  For development, I've been linking it in via npm-link.
+
 Tutorial 01
 ====
 * Normal Tutorial 01 stuff
