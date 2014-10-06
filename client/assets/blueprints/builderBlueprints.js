@@ -28,6 +28,7 @@ Blueprints.FungusLevelBuilder = {
 };
 
 /* need to figure out a way to have a map builder assemble multiple levels together */
+/*
 Blueprints.MapBuilder = {
   name: 'MapBuilder',
   inherits: 'BaseMapBuilder',
@@ -60,5 +61,5 @@ Blueprints.MapBuilder = {
   }
 
 };
-
+*/
 module.exports = Blueprints;

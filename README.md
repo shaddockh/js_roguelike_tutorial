@@ -39,8 +39,8 @@ Tutorial 04
 ====
 * Normal Tutorial 4 stuff
 * switched over to Bower to pull official rot.js so we can get latest
-** had to build a rot.js shim that can be used as a commonjs interface to the bower rot.js
-** TODO: need to come up with a better build pattern for bower components
+* had to build a rot.js shim that can be used as a commonjs interface to the bower rot.js
+* TODO: need to come up with a better build pattern for bower components
 * Started adding in support for the blueprint manager (along with additional development of entity-blueprint system)
 
 Tutorial 05
@@ -52,7 +52,7 @@ Tutorial 05
 * added Entity.hasMixin and have it look at either the 'type' or the 'name' and ignore case
 * added new mixin called Aspect that handles entity visuals
 * migrated the "draw" functions to the Tile object and the Aspect mixin instead of inside the play screen
-* TODO: look into the browserify plugin that converts a directory of files to a single JSON object (for entities and blueprints)
+* DONE: look into the browserify plugin that converts a directory of files to a single JSON object (for entities and blueprints) - Note: just have a _index in the root of blueprint or mixins and require the files in
 
 
 Tutorial 06

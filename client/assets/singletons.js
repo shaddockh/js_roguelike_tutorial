@@ -22,7 +22,7 @@ function initialize() {
       console.log(msg);
     });
   });
-  //BlueprintCatalog.hydrateAllBlueprints();
+  BlueprintCatalog.hydrateAllBlueprints();
 
   //Build the tile cache
   BlueprintCatalog.getBlueprintsDescendingFrom('tile', true).forEach(function (obj) {

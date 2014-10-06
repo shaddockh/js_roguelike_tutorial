@@ -5294,6 +5294,7 @@ Blueprints.FungusLevelBuilder = {
 };
 
 /* need to figure out a way to have a map builder assemble multiple levels together */
+/*
 Blueprints.MapBuilder = {
   name: 'MapBuilder',
   inherits: 'BaseMapBuilder',
@@ -5326,7 +5327,7 @@ Blueprints.MapBuilder = {
   }
 
 };
-
+*/
 module.exports = Blueprints;
 
 },{}],5:[function(require,module,exports){
@@ -5723,7 +5724,7 @@ var Level = function (tiles, levelId) {
     new ROT.FOV.PreciseShadowcasting(function (x, y) {
       return true;
     }, {
-      topology: 4
+      topology: 8
     }));
 
 };
@@ -6916,7 +6917,7 @@ function initialize() {
       console.log(msg);
     });
   });
-  //BlueprintCatalog.hydrateAllBlueprints();
+  BlueprintCatalog.hydrateAllBlueprints();
 
   //Build the tile cache
   BlueprintCatalog.getBlueprintsDescendingFrom('tile', true).forEach(function (obj) {
@@ -7366,7 +7367,7 @@ var BlueprintCatalog = (function () {
           hydratedBlueprints.add(name, hydrated);
           result = hydrated;
         } catch (e) {
-          throw new Error(name + ' inherits from undefined blueprint: ' + result.inherits);
+          throw new Error('Blueprint: "' + name + '" inherits from undefined blueprint: "' + result.inherits + '"');
         }
       }
     } else {
@@ -7454,12 +7455,9 @@ var BlueprintCatalog = (function () {
    * @method hydrateAllBlueprints
    */
   function hydrateAllBlueprints() {
-    bpList = [];
-    for (var bp in blueprintDictionary) {
-      if (blueprintDictionary.hasOwnProperty(bp)) {
-        bpList.push(getBlueprint(bp));
-      }
-    }
+    getAllBlueprintNames().forEach(function (bp) {
+      getBlueprint(bp);
+    });
     needsReindexing = false;
   }
 
@@ -7847,4 +7845,4 @@ module.exports = MixinCatalog;
 	ctx.vsprintf = vsprintf;
 })(typeof exports != "undefined" ? exports : window);
 
-},{}]},{},[2,1]);
+},{}]},{},[2]);

@@ -20,7 +20,7 @@ var Level = function (tiles, levelId) {
     new ROT.FOV.PreciseShadowcasting(function (x, y) {
       return true;
     }, {
-      topology: 4
+      topology: 8
     }));
 
 };
