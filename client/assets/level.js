@@ -82,16 +82,23 @@ Level.prototype.drawViewPort = function (display, x1, y1, x2, y2) {
   }
 
   // Render the entities
-  var entities = this.getEntities();
-  entities.forEach(function (entity) {
+  var entities = this.getEntities().filter(function (entity) {
     // Only render the entity if they would show up on the screen
     if (entity.isInBounds(x1, y1, x2, y2)) {
       if (entity.hasMixin('aspect')) {
         if (visibleCells[entity.getX() + ',' + entity.getY()]) {
-          entity.draw(display, entity.getX() - x1, entity.getY() - y1);
+          return true;
         }
       }
     }
+    return false;
+  });
+
+  entities.sort(function (a, b) {
+    return a.getRenderLayer() - b.getRenderLayer();
+  });
+  entities.forEach(function (entity) {
+    entity.draw(display, entity.getX() - x1, entity.getY() - y1);
   });
 };
 

@@ -94,3 +94,12 @@ Tutorial 08
 * Playing with the idea of moving the FOV algorithm into a separate builder.
 * modified aspect.draw to accept a options field with { outsideFOV: true|false } to determine if it should render with the obscuredForeground setting or not.
 * TODO: render entities, but have actors use the obscuredForeground valud of 'invisible' so they don't show up
+
+Tutorial 09
+====
+* From: http://www.codingcookies.com/2013/08/29/building-a-roguelike-in-javascript-part-9/
+* Normal Tutorial 9 stuff
+* added concept of render layers to "Aspect" so that things such as decals would render below actors
+* added bloodstain decal on death of some actors
+* deviated from way tutorial 9 stored entities..just filter to viewport, then sort entities by renderLayer
+* TODO: discovered that in some cases a wandering monster and the player were ending up moving to the same space

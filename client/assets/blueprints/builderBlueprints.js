@@ -22,7 +22,7 @@ Blueprints.FungusLevelBuilder = {
     minCreatureCount: 40,
     maxCreatureCount: 50,
     creatureList: [
-      'FungusTemplate'
+      'FungusTemplate', 'NewtTemplate', 'BatTemplate'
     ]
   }
 };

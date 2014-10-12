@@ -94,6 +94,7 @@ Mixins.Aspect = {
     this._background = blueprint.background;
     this._screenName = blueprint.screenName;
     this._blocksPath = blueprint.blocksPath || false;
+    this._renderLayer = blueprint.renderLayer || 0;
   },
   draw: function (display, x, y, options) {
     options = options || {};
@@ -121,6 +122,9 @@ Mixins.Aspect = {
   },
   blocksPath: function () {
     return this._blocksPath;
+  },
+  getRenderLayer: function () {
+    return this._renderLayer;
   }
 
 };
@@ -132,6 +136,7 @@ Mixins.Moveable = {
   type: 'Moveable',
   init: function (blueprint) {},
   tryMove: function (x, y, map) {
+    map = map || this.getMap();
     var tile = map.getTile(x, y);
     var target = map.getEntityAt(x, y);
     // Check if we can walk on the tile
@@ -141,7 +146,7 @@ Mixins.Moveable = {
       // If we are an attacker, try to attack
       // the target
       if (target.hasMixin('aspect') && target.blocksPath()) {
-        if (this.hasMixin('Attacker')) {
+        if (this.hasMixin('Attacker') && this.canAttack(target)) {
           this.attack(target);
           return true;
         } else {
@@ -163,11 +168,20 @@ Mixins.Moveable = {
       return true;
       // Check if the tile is diggable, and
       // if so try to dig it
-    } else if (tile.isDiggable()) {
+    } else if (this.hasMixin('digger') && tile.isDiggable()) {
       map.dig(x, y);
       return true;
     }
     return false;
+  }
+};
+
+Mixins.Digger = {
+  name: 'Digger',
+  obsolete: false,
+  doc: 'Can dig',
+  init: function (blueprint) {
+
   }
 };
 
@@ -216,6 +230,12 @@ Mixins.PlayerActor = {
   doc: 'Player controller',
   init: function (blueprint) {},
   act: function () {
+    // Detect if the game is over
+    if (this.getHp() < 1) {
+      require('../screens/playScreen').setGameEnded(true);
+      // Send a last message to the player
+      Game.sendMessage(this, 'You have died... Press [Enter] to continue!');
+    }
     //Re-render the screen
     Game.refresh();
     //lock the engine and wait asynchronously
@@ -273,6 +293,22 @@ Mixins.FungusActor = {
   }
 };
 
+Mixins.WanderingActor = {
+  name: 'WanderingActor',
+  type: 'Actor',
+  doc: 'Wandering actor.  Just randomly wanders around',
+  act: function () {
+    // Flip coin to determine if moving by 1 in the positive or negative direction
+    var moveOffset = (Math.round(Math.random()) === 1) ? 1 : -1;
+    // Flip coin to determine if moving in x direction or y direction
+    if (Math.round(Math.random()) === 1) {
+      this.tryMove(this.getX() + moveOffset, this.getY());
+    } else {
+      this.tryMove(this.getX(), this.getY() + moveOffset);
+    }
+  }
+};
+
 Mixins.Destructible = {
   name: 'Destructible',
   type: 'Destructible',
@@ -281,6 +317,7 @@ Mixins.Destructible = {
     this._maxHp = blueprint.maxHp || 10;
     this._hp = blueprint.hp || this._maxHp;
     this._defenseValue = blueprint.defenseValue || 0;
+    this._destroySpawnTemplate = blueprint.destroySpawnTemplate || null;
   },
   takeDamage: function (attacker, damage) {
     this._hp -= damage;
@@ -288,7 +325,16 @@ Mixins.Destructible = {
     if (this._hp <= 0) {
       Game.sendMessage(attacker, 'You kill the %s!', [this.getScreenName()]);
       Game.sendMessage(this, 'You die!');
-      this.getMap().removeEntity(this);
+      if (this._destroySpawnTemplate) {
+        var spawn = new Entity(this._destroySpawnTemplate);
+        this.getMap().addEntityAtPosition(spawn, this.getX(), this.getY());
+      }
+      // Check if the player died, and if so call their act method to prompt the user.
+      if (this.hasMixin('PlayerActor')) {
+        this.act();
+      } else {
+        this.getMap().removeEntity(this);
+      }
     }
   },
   getHp: function () {
@@ -323,6 +369,15 @@ Mixins.Attacker = {
   },
   setAttackValue: function (value) {
     this._attackValue = value;
+  },
+  canAttack: function (target) {
+
+    //TODO: build some kind of alignment system
+    if (this.hasMixin('PlayerActor') || target.hasMixin('PlayerActor')) {
+      return true;
+    } else {
+      return false;
+    }
   },
   attack: function (target) {
     // Only remove the entity if they were attackable

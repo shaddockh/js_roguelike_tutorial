@@ -75,6 +75,8 @@ playScreen.render = function (display) {
   display.drawText(0, screenHeight, stats);
 };
 
+playScreen.gameEnded = false;
+
 playScreen.move = function (dX, dY) {
   var newX = player.getX() + dX;
   var newY = player.getY() + dY;
@@ -87,7 +89,20 @@ playScreen.userActivate = function (actionCode) {
   player.playerActivate(player.getX(), player.getY(), world.getActiveLevel, actionCode);
 };
 
+playScreen.setGameEnded = function (value) {
+  playScreen.gameEnded = value;
+};
+
 playScreen.handleInput = function (inputType, inputData) {
+  // If the game is over, enter will bring the user to the losing screen.
+  if (playScreen.gameEnded) {
+    if (inputType === 'keydown' && inputData.keyCode === ROT.VK_RETURN) {
+      Game.switchScreen(require('./loseScreen'));
+    }
+    // Return to make sure the user can't still play
+    return;
+  }
+
   if (inputType === 'keydown') {
 
     switch (inputData.keyCode) {

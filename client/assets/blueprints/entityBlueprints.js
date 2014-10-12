@@ -44,7 +44,70 @@ Blueprints.FungusTemplate = {
   },
   FungusActor: {},
   Destructible: {
-    maxHp: 10
+    maxHp: 10,
+    destroySpawnTemplate: 'Bloodstain'
+  }
+};
+Blueprints.WanderingActorTemplate = {
+  inherits: 'Actor',
+  name: 'WanderingActorTemplate',
+  WanderingActor: {},
+  Destructible: {
+    destroySpawnTemplate: 'Bloodstain'
+  }
+};
+
+Blueprints.BatTemplate = {
+  inherits: 'WanderingActorTemplate',
+  name: 'BatTemplate',
+  Aspect: {
+    character: 'B',
+    foreground: 'white',
+    screenName: 'bat'
+  },
+  Destructible: {
+    maxHp: 5
+  },
+  Attacker: {
+    attackValue: 4
+  }
+};
+
+Blueprints.NewtTemplate = {
+  inherits: 'WanderingActorTemplate',
+  name: 'NewtTemplate',
+  Aspect: {
+    character: ':',
+    foreground: 'yellow',
+    screenName: 'newt'
+  },
+  Destructible: {
+    maxHp: 3
+  },
+  Attacker: {
+    attackValue: 2
+  }
+};
+
+Blueprints.Decal = {
+  inherits: '_base',
+  name: 'Decal',
+  Position: {},
+  Aspect: {
+    blocksPath: false
+  }
+};
+
+//TODO: Decals need to be drawn before actors/items
+Blueprints.Bloodstain = {
+  inherits: 'Decal',
+  name: 'Bloodstain',
+  Aspect: {
+    character: '.',
+    foreground: 'red',
+    background: 'black',
+    screenName: 'blood',
+    renderLayer: -1
   }
 };
 

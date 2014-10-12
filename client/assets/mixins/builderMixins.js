@@ -199,7 +199,7 @@ Mixins.RandomPositionCreatureBuilder = {
       this.debug('Creature Builder: building ' + count + ' creatures.', 'RandomPositionCreatureBuilder');
     }
     for (var i = 0; i < count; i++) {
-      level.addEntityAtRandomPosition(new Entity(this._creatureList[0]));
+      level.addEntityAtRandomPosition(new Entity(this._creatureList[Math.floor(Math.random() * this._creatureList.length)]));
     }
   }
 };
