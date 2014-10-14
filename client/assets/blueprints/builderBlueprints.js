@@ -24,6 +24,13 @@ Blueprints.FungusLevelBuilder = {
     creatureList: [
       'FungusTemplate', 'NewtTemplate', 'BatTemplate'
     ]
+  },
+  RandomPositionItemBuilder: {
+    minItemCount: 10,
+    maxItemCount: 15,
+    itemList: [
+      'apple', 'rock'
+    ]
   }
 };
 

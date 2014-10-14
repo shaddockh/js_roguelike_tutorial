@@ -22,14 +22,14 @@ Tutorial 02
 * Launching a screen is handled by 'requiring' the screen and passing it to the switch screen function
 * added a gameconfig.js that currently just contains the screen dimensions
 * gameconfig is accessible from Game.config
-* TODO: may create an array of screens in the Game object that auto-loads each screen..not sure yet.
+* DONE: may create an array of screens in the Game object that auto-loads each screen..not sure yet.
 
 Tutorial 03
 ====
 * Normal Tutorial 3 stuff
 * TODO: Make revealing module pattern on all screens
 * TODO: hang everything off Game
-* TODO: add screenManager to game object, have it load screens via config entries
+* DONE: add screenManager to game object, have it load screens via config entries (uses ScreenCatalog now)
 * Made a base screen and extended it for each screen
 * moved the logic from the playscreen that generates the world to a separate worldbuilder class to mimic the Java tutorial
 * modified the key bindings to also allow Vi style movement keys
@@ -103,3 +103,12 @@ Tutorial 09
 * added bloodstain decal on death of some actors
 * deviated from way tutorial 9 stored entities..just filter to viewport, then sort entities by renderLayer
 * TODO: discovered that in some cases a wandering monster and the player were ending up moving to the same space
+
+Tutorial 10
+====
+* From: http://www.codingcookies.com/2013/08/31/building-a-roguelike-in-javascript-part-10a/
+* Note - didn't actually take anything from tutorial 10A.  The Entity Blueprint system basically accomplishes the repository pattern
+* Created a screen Catalog that screens populate and just call ScreenCatalog.getScreen('name') so we can put screen names into templates
+* moved all references to screens to use the new ScreenCatalog singleton
+* moved all calls to Math.random to a new RNG singleton that just delegates to ROT.RNG for now
+

@@ -103,21 +103,31 @@ Level.prototype.drawViewPort = function (display, x1, y1, x2, y2) {
 };
 
 Level.prototype.getEntities = function () {
-  return this._entities;
+  return this._entities || [];
 };
 
-Level.prototype.getEntityAt = function (x, y) {
+Level.prototype.getEntitiesAt = function (x, y) {
   // Iterate through all entities searching for one with
   // matching position
-  var ents = this.getEntities();
-  if (ents.length) {
-    for (var i = 0, len = ents.length; i < len; i++) {
-      if (ents[i].getX() === x && ents[i].getY() === y) {
-        return ents[i];
-      }
+  return this.getEntities().filter(function (ent) {
+    if (ent.getX() === x && ent.getY() === y) {
+      return true;
+    } else {
+      return false;
     }
-  }
-  return false;
+  });
+};
+
+Level.prototype.queryEntitiesAt = function (x, y, filter) {
+  // Iterate through all entities searching for one with
+  // matching position
+  return this.getEntitiesAt(x, y).filter(filter);
+};
+
+Level.prototype.getItemsAt = function (x, y) {
+  return this.queryEntitiesAt(x, y, function (entity) {
+    return entity.hasMixin('item');
+  });
 };
 
 Level.prototype.getEntitiesWithinRadius = function (centerX, centerY, radius) {
@@ -184,7 +194,7 @@ Level.prototype.setFov = function (fovFunction) {
 Level.prototype.isEmptyFloor = function (x, y) {
   // Check if the tile is floor and also has no entity
   return this.getTile(x, y).isWalkable() &&
-    !this.getEntityAt(x, y);
+    !this.getEntitiesAt(x, y).length;
 };
 
 Level.prototype.dig = function (x, y) {
@@ -198,8 +208,8 @@ Level.prototype.getRandomFloorPosition = function () {
   // Randomly generate a tile which is a floor
   var x, y;
   do {
-    x = Math.floor(Math.random() * this.getWidth());
-    y = Math.floor(Math.random() * this.getHeight());
+    x = Singletons.RNG.randomIntInRange(0, this.getWidth());
+    y = Singletons.RNG.randomIntInRange(0, this.getHeight());
   } while (!this.isEmptyFloor(x, y));
   return {
     x: x,

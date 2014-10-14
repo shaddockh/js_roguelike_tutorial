@@ -30,7 +30,11 @@ Blueprints.PlayerTemplate = {
   Sight: {
     sightRadius: 6
   },
-  MessageRecipient: {}
+  MessageRecipient: {},
+  Digger: {},
+  InventoryHolder: {
+    inventorySlots: 22
+  }
 };
 
 Blueprints.FungusTemplate = {
@@ -88,13 +92,44 @@ Blueprints.NewtTemplate = {
     attackValue: 2
   }
 };
+Blueprints.Item = {
+  inherits: '_base',
+  name: 'Item',
+  Position: {},
+  Aspect: {
+    blocksPath: false,
+    renderLayer: -1
+  },
+  Item: {}
+};
+
+Blueprints.apple = {
+  inherits: 'Item',
+  name: 'apple',
+  Aspect: {
+    character: '%',
+    foreground: 'red',
+    screenName: 'apple'
+  }
+};
+
+Blueprints.rock = {
+  inherits: 'Item',
+  name: 'rock',
+  Aspect: {
+    character: '*',
+    foreground: 'white',
+    screenName: 'rock'
+  }
+};
 
 Blueprints.Decal = {
   inherits: '_base',
   name: 'Decal',
   Position: {},
   Aspect: {
-    blocksPath: false
+    blocksPath: false,
+    renderLayer: -99
   }
 };
 
@@ -107,7 +142,6 @@ Blueprints.Bloodstain = {
     foreground: 'red',
     background: 'black',
     screenName: 'blood',
-    renderLayer: -1
   }
 };
 

@@ -1,7 +1,10 @@
-var MixinCatalog = require('entity-blueprint-manager').MixinCatalog;
-var BlueprintCatalog = require('entity-blueprint-manager').BlueprintCatalog;
+var entityBlueprintManager = require('entity-blueprint-manager');
+var MixinCatalog = new entityBlueprintManager.MixinCatalog();
+var BlueprintCatalog = new entityBlueprintManager.BlueprintCatalog();
 var TileCatalog = require('./tileCatalog');
 var World = require('./world');
+var ScreenCatalog = require('./screenCatalog');
+var RNG = require('./rng');
 
 function initialize() {
   var blueprintIndex = require('./blueprints/_blueprintIndex');
@@ -32,6 +35,11 @@ function initialize() {
   module.exports.Player = new Entity('PlayerTemplate');
   module.exports.World = new World();
 
+  //set up the screens
+  var screens = require('./screens/_screenIndex');
+  for (var name in screens) {
+    ScreenCatalog.addScreen(name, screens[name]);
+  }
   //var includeFolder = require('include-folder'),
   //folder = includeFolder('./client/assets');
   //console.log(folder);
@@ -40,6 +48,8 @@ function initialize() {
 module.exports.BlueprintCatalog = BlueprintCatalog;
 module.exports.TileCatalog = TileCatalog;
 module.exports.MixinCatalog = MixinCatalog;
-module.exports.initialize = initialize;
+module.exports.ScreenCatalog = ScreenCatalog;
 module.exports.World = null;
 module.exports.Player = null;
+module.exports.RNG = RNG;
+module.exports.initialize = initialize;

@@ -194,12 +194,33 @@ Mixins.RandomPositionCreatureBuilder = {
   },
   buildCreatures: function () {
     var level = this.getLevel();
-    var count = Math.round(Math.random() * (this._maxCreatureCount - this._minCreatureCount) + this._minCreatureCount);
+    var count = Singletons.RNG.randomIntInRange(this._minCreatureCount, this._maxCreatureCount);
     if (this.hasMixin('debug')) {
       this.debug('Creature Builder: building ' + count + ' creatures.', 'RandomPositionCreatureBuilder');
     }
     for (var i = 0; i < count; i++) {
-      level.addEntityAtRandomPosition(new Entity(this._creatureList[Math.floor(Math.random() * this._creatureList.length)]));
+      level.addEntityAtRandomPosition(new Entity(Singletons.RNG.randomArrayElement(this._creatureList)));
+    }
+  }
+};
+
+Mixins.RandomPositionItemBuilder = {
+  name: 'RandomPositionItemBuilder',
+  type: 'ItemBuilder',
+  doc: 'Generates a number of random items from an array of templates on a level',
+  init: function (blueprint) {
+    this._minItemCount = blueprint.minItemCount || 10;
+    this._maxItemCount = blueprint.maxItemCount || 10;
+    this._itemList = blueprint.itemList || [];
+  },
+  buildItems: function () {
+    var level = this.getLevel();
+    var count = Singletons.RNG.randomIntInRange(this._minItemCount, this._maxItemCount);
+    if (this.hasMixin('debug')) {
+      this.debug('Item Builder: building ' + count + ' items.', 'RandomPositionItemBuilder');
+    }
+    for (var i = 0; i < count; i++) {
+      level.addEntityAtRandomPosition(new Entity(Singletons.RNG.randomArrayElement(this._itemList)));
     }
   }
 };

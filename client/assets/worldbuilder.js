@@ -89,7 +89,7 @@ var WorldBuilder = (function () {
       }
     }
     // We shuffle the list of matches to prevent bias
-    return matches.randomize();
+    return Singletons.RNG.randomizeArray(matches);
   };
 
   // This tries to connect two regions by calculating

@@ -1,5 +1,7 @@
 // Create our Mixins namespace
 var Singletons = require('./../singletons');
+var Game = require('./../game');
+var Entity = require('./../entity');
 
 var Mixins = {};
 
@@ -125,8 +127,20 @@ Mixins.Aspect = {
   },
   getRenderLayer: function () {
     return this._renderLayer;
-  }
+  },
+  describe: function () {
+    return this._screenName;
+  },
+  describeA: function (capitalize) {
+    // Optional parameter to capitalize the a/an.
+    var prefixes = capitalize ? ['A', 'An'] : ['a', 'an'];
+    var string = this.describe();
+    var firstLetter = string.charAt(0).toLowerCase();
+    // If word starts by a vowel, use an, else use a. Note that this is not perfect.
+    var prefix = 'aeiou'.indexOf(firstLetter) >= 0 ? 1 : 0;
 
+    return prefixes[prefix] + ' ' + string;
+  }
 };
 
 // Define our Moveable mixin
@@ -138,33 +152,47 @@ Mixins.Moveable = {
   tryMove: function (x, y, map) {
     map = map || this.getMap();
     var tile = map.getTile(x, y);
-    var target = map.getEntityAt(x, y);
+
     // Check if we can walk on the tile
     // and if so simply walk onto it
 
-    if (target) {
-      // If we are an attacker, try to attack
-      // the target
-      if (target.hasMixin('aspect') && target.blocksPath()) {
-        if (this.hasMixin('Attacker') && this.canAttack(target)) {
-          this.attack(target);
-          return true;
-        } else {
-          // If not nothing we can do, but we can't
-          // move to the tile
-          return false;
+    var targets = map.getEntitiesAt(x, y).filter(function (entity) {
+      if (entity.hasMixin('aspect') && entity.blocksPath()) {
+        return true;
+      } else {
+        return false;
+      }
+    });
+
+    if (targets.length) {
+      //entity there..can't walk
+      var result = false;
+      for (var i = 0; i < targets.length; i++) {
+        if (this.hasMixin('Attacker') && this.canAttack(targets[i])) {
+          this.attack(targets[i]);
+          result = true;
         }
       }
-      //else {
-      //send some kind of walkover message
-      //}
+      return result;
     }
 
-    //entity there..can't walk
     if (tile.isWalkable()) {
       // Update the entity's position
       this.setX(x);
       this.setY(y);
+
+      if (this.hasMixin('PlayerActor')) {
+        //TODO: needs to be fixed to only pick up visible items
+        var items = this.getMap().getItemsAt(x, y);
+        if (items.length) {
+          if (items.length === 1) {
+            Game.sendMessage(this, "You see %s.", [items[0].describeA()]);
+          } else {
+            Game.sendMessage(this, "There are several things here.");
+          }
+        }
+      }
+
       return true;
       // Check if the tile is diggable, and
       // if so try to dig it
@@ -221,9 +249,6 @@ Mixins.Position = {
   }
 };
 
-var Game = require('./../game');
-var Entity = require('./../entity');
-
 Mixins.PlayerActor = {
   name: 'PlayerActor',
   type: 'Actor',
@@ -232,7 +257,7 @@ Mixins.PlayerActor = {
   act: function () {
     // Detect if the game is over
     if (this.getHp() < 1) {
-      require('../screens/playScreen').setGameEnded(true);
+      Singletons.ScreenCatalog.getScreen('PlayScreen').setGameEnded(true);
       // Send a last message to the player
       Game.sendMessage(this, 'You have died... Press [Enter] to continue!');
     }
@@ -244,12 +269,11 @@ Mixins.PlayerActor = {
     this.clearMessages();
   },
   playerActivate: function (x, y, map, activateMessage) {
-    var entity = this.getMap().getEntityAt(x, y);
-    if (entity) {
+    this.getMap().getEntitiesAt(x, y).forEach(function (entity) {
       if (entity.hasMixin('activateable')) {
         entity.activate(activateMessage);
       }
-    }
+    });
   }
 };
 
@@ -264,13 +288,13 @@ Mixins.FungusActor = {
   act: function () {
     // Check if we are going to try growing this turn
     if (this._growthsRemaining > 0) {
-      if (Math.random() <= 0.02) {
+      if (Singletons.RNG.random() <= 0.02) {
         // Generate the coordinates of a random adjacent square by
         // generating an offset between [-1, 0, 1] for both the x and
         // y directions. To do this, we generate a number from 0-2 and then
         // subtract 1.
-        var xOffset = Math.floor(Math.random() * 3) - 1;
-        var yOffset = Math.floor(Math.random() * 3) - 1;
+        var xOffset = Singletons.RNG.randomIntInRange(0, 2);
+        var yOffset = Singletons.RNG.randomIntInRange(0, 2);
         // Make sure we aren't trying to spawn on the same tile as us
         if (xOffset !== 0 && yOffset !== 0) {
           // Check if we can actually spawn at that location, and if so
@@ -299,9 +323,9 @@ Mixins.WanderingActor = {
   doc: 'Wandering actor.  Just randomly wanders around',
   act: function () {
     // Flip coin to determine if moving by 1 in the positive or negative direction
-    var moveOffset = (Math.round(Math.random()) === 1) ? 1 : -1;
+    var moveOffset = (Math.round(Singletons.RNG.random()) === 1) ? 1 : -1;
     // Flip coin to determine if moving in x direction or y direction
-    if (Math.round(Math.random()) === 1) {
+    if (Math.round(Singletons.RNG.random()) === 1) {
       this.tryMove(this.getX() + moveOffset, this.getY());
     } else {
       this.tryMove(this.getX(), this.getY() + moveOffset);
@@ -385,7 +409,7 @@ Mixins.Attacker = {
       var attack = this.getAttackValue();
       var defense = target.getDefenseValue();
       var max = Math.max(0, attack - defense);
-      var damage = 1 + Math.floor(Math.random() * max);
+      var damage = Singletons.RNG.randomIntInRange(1, max);
 
       Game.sendMessage(this, 'You strike the %s for %d damage!', [target.getScreenName(), damage]);
       Game.sendMessage(target, 'The %s strikes you for %d damage!', [this.getScreenName(), damage]);
@@ -422,6 +446,91 @@ Mixins.Sight = {
   },
   getSightRadius: function () {
     return this._sightRadius;
+  }
+};
+
+Mixins.InventoryHolder = {
+  name: 'InventoryHolder',
+  doc: 'Contains inventory items',
+  init: function (blueprint) {
+    // Default to 10 inventory slots.
+    var inventorySlots = blueprint.inventorySlots || 10;
+    // Set up an empty inventory.
+    this._items = new Array(inventorySlots);
+  },
+  getItems: function () {
+    return this._items;
+  },
+  getItem: function (i) {
+    return this._items[i];
+  },
+  addItem: function (item) {
+    // Try to find a slot, returning true only if we could add the item.
+    for (var i = 0; i < this._items.length; i++) {
+      if (!this._items[i]) {
+        this._items[i] = item;
+        return true;
+      }
+    }
+    return false;
+  },
+  removeItem: function (i) {
+    // Simply clear the inventory slot.
+    this._items[i] = null;
+  },
+  canAddItem: function () {
+    // Check if we have an empty slot.
+    for (var i = 0; i < this._items.length; i++) {
+      if (!this._items[i]) {
+        return true;
+      }
+    }
+    return false;
+  },
+  pickupItems: function (indices) {
+    // Allows the user to pick up items from the map, where indices is
+    // the indices for the array returned by map.getItemsAt
+    var level = this.getMap();
+    var mapItems = level.getItemsAt(this.getX(), this.getY());
+    var added = 0;
+    var removed = [];
+    // Iterate through all indices.
+    for (var i = 0; i < indices.length; i++) {
+      // Try to add the item. If our inventory is not full, then splice the
+      // item out of the list of items. In order to fetch the right item, we
+      // have to offset the number of items already added.
+      var currentIdx = indices[i] - added;
+      if (this.addItem(mapItems[currentIdx])) {
+        removed.push(mapItems[currentIdx]);
+        mapItems.splice(currentIdx, 1);
+        added++;
+      } else {
+        // Inventory is full
+        break;
+      }
+    }
+    // Update the map items
+    removed.forEach(function (item) {
+      level.removeEntity(item);
+    });
+    //this._map.setItemsAt(this.getX(), this.getY(), this.getZ(), mapItems);
+    // Return true only if we added all items
+    return added === indices.length;
+  },
+  dropItem: function (i) {
+    // Drops an item to the current map tile
+    if (this._items[i]) {
+      this.getMap().addEntityAtPosition(this._items[i], this.getX(), this.getY());
+      this.removeItem(i);
+    }
+  }
+};
+
+Mixins.Item = {
+  name: 'Item',
+  doc: 'Item ',
+  init: function (blueprint) {
+
   }
 };
 

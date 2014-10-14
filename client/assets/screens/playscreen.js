@@ -42,6 +42,12 @@ playScreen.enter = function () {
 var vsprintf = require('sprintf-js').vsprintf;
 playScreen.render = function (display) {
 
+  // Render subscreen if there is one
+  if (playScreen.subScreen) {
+    playScreen.subScreen.render(display);
+    return;
+  }
+
   var currentLevel = world.getActiveLevel();
   var screenWidth = Game.getScreenWidth();
   var screenHeight = Game.getScreenHeight();
@@ -76,6 +82,15 @@ playScreen.render = function (display) {
 };
 
 playScreen.gameEnded = false;
+playScreen.subScreen = null;
+playScreen.setSubScreen = function (subscreen) {
+  if (typeof (subscreen) === 'string') {
+    subscreen = Singletons.ScreenCatalog.getScreen(subscreen);
+  }
+
+  playScreen.subScreen = subscreen;
+  Game.refresh();
+};
 
 playScreen.move = function (dX, dY) {
   var newX = player.getX() + dX;
@@ -97,22 +112,27 @@ playScreen.handleInput = function (inputType, inputData) {
   // If the game is over, enter will bring the user to the losing screen.
   if (playScreen.gameEnded) {
     if (inputType === 'keydown' && inputData.keyCode === ROT.VK_RETURN) {
-      Game.switchScreen(require('./loseScreen'));
+      Game.switchScreen(Singletons.ScreenCatalog.getScreen('LoseScreen'));
     }
     // Return to make sure the user can't still play
     return;
   }
 
+  // Handle subscreen input if there is one
+  if (playScreen.subScreen) {
+    playScreen.subScreen.handleInput(inputType, inputData);
+    return;
+  }
   if (inputType === 'keydown') {
 
     switch (inputData.keyCode) {
       // If enter is pressed, go to the win screen
     case ROT.VK_RETURN:
-      Game.switchScreen(require('./winScreen'));
+      Game.switchScreen(Singletons.ScreenCatalog.getScreen('WinScreen'));
       break;
       // If escape is pressed, go to lose screen
     case ROT.VK_ESCAPE:
-      Game.switchScreen(require('./loseScreen'));
+      Game.switchScreen(Singletons.ScreenCatalog.getScreen('LoseScreen'));
       break;
       // Movement
     case ROT.VK_LEFT:
@@ -131,6 +151,57 @@ playScreen.handleInput = function (inputType, inputData) {
     case ROT.VK_J:
       playScreen.move(0, 1);
       break;
+    case ROT.VK_I:
+      if (player.getItems().filter(function (x) {
+        return x;
+      }).length === 0) {
+        // If the player has no items, send a message and don't take a turn
+        Game.sendMessage(player, "You are not carrying anything!");
+        Game.refresh();
+      } else {
+        // Show the inventory
+        var inventoryScreen = Singletons.ScreenCatalog.getScreen('InventoryScreen');
+        inventoryScreen.setup(player, player.getItems());
+        playScreen.setSubScreen(inventoryScreen);
+      }
+      return;
+    case ROT.VK_D:
+      if (player.getItems().filter(function (x) {
+        return x;
+      }).length === 0) {
+        // If the player has no items, send a message and don't take a turn
+        Game.sendMessage(player, "You have nothing to drop!");
+        Game.refresh();
+      } else {
+        // Show the drop screen
+        var dropScreen = Singletons.ScreenCatalog.getScreen('DropScreen');
+        dropScreen.setup(player, player.getItems());
+        playScreen.setSubScreen(dropScreen);
+      }
+      return;
+    case ROT.VK_COMMA:
+      var items = world.getActiveLevel().queryEntitiesAt(player.getX(), player.getY(), function (entity) {
+        return entity.hasMixin('item');
+      });
+      // If there are no items, show a message
+      if (!items.length) {
+        Game.sendMessage(player, "There is nothing here to pick up.");
+      } else if (items.length === 1) {
+        // If only one item, try to pick it up
+        var item = items[0];
+        if (player.pickupItems([0])) {
+          Game.sendMessage(player, "You pick up %s.", [item.describeA()]);
+        } else {
+          Game.sendMessage(player, "Your inventory is full! Nothing was picked up.");
+        }
+      } else {
+        // Show the pickup screen if there are any items
+        var pickupScreen = Singletons.ScreenCatalog.getScreen('PickupScreen');
+        pickupScreen.setup(player, items);
+        playScreen.setSubScreen(pickupScreen);
+        return;
+      }
+      break;
     default:
       //not a valid key
       return;
@@ -146,9 +217,12 @@ playScreen.handleInput = function (inputType, inputData) {
       return;
     }
   }
+  playScreen.endTurn();
+};
+
+playScreen.endTurn = function () {
   // Unlock the engine
   world.getEngine().unlock();
-
 };
 
 module.exports = playScreen;

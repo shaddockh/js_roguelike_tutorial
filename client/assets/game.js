@@ -60,9 +60,8 @@ Game.canRun = function () {
 };
 
 Game.switchScreen = function (screen) {
-
   if (typeof (screen) === 'string') {
-    screen = require(screen);
+    screen = Singletons.ScreenCatalog.getScreen(screen);
   }
 
   // If we had a screen before, notify it that we exited
@@ -125,8 +124,7 @@ Game.getNeighborPositions = function (x, y) {
       });
     }
   }
-  //TODO: randomize is part of Rot.js
-  return tiles.randomize();
+  return Singletons.RNG.randomizeArray(tiles);
 };
 
 module.exports = Game;
