@@ -75,10 +75,15 @@ playScreen.render = function (display) {
     );
   });
 
+  //TODO: Ask player to update UI with appropriate stuff
   // Render player HP
   var stats = '%c{white}%b{black}';
   stats += vsprintf('HP: %d/%d ', [player.getHp(), player.getMaxHp()]);
   display.drawText(0, screenHeight, stats);
+
+  // Render hunger state
+  var hungerState = player.getHungerState();
+  display.drawText(screenWidth - hungerState.length, screenHeight, hungerState);
 };
 
 playScreen.gameEnded = false;
@@ -127,13 +132,13 @@ playScreen.handleInput = function (inputType, inputData) {
 
     switch (inputData.keyCode) {
       // If enter is pressed, go to the win screen
-    case ROT.VK_RETURN:
-      Game.switchScreen(Singletons.ScreenCatalog.getScreen('WinScreen'));
-      break;
+      //case ROT.VK_RETURN:
+      //Game.switchScreen(Singletons.ScreenCatalog.getScreen('WinScreen'));
+      //break;
       // If escape is pressed, go to lose screen
-    case ROT.VK_ESCAPE:
-      Game.switchScreen(Singletons.ScreenCatalog.getScreen('LoseScreen'));
-      break;
+      //case ROT.VK_ESCAPE:
+      //Game.switchScreen(Singletons.ScreenCatalog.getScreen('LoseScreen'));
+      //break;
       // Movement
     case ROT.VK_LEFT:
     case ROT.VK_H:
@@ -202,6 +207,17 @@ playScreen.handleInput = function (inputType, inputData) {
         return;
       }
       break;
+    case ROT.VK_E:
+      // Show the drop screen
+      var eatScreen = Singletons.ScreenCatalog.getScreen('EatScreen');
+      if (eatScreen.setup(player, player.getItems())) {
+        playScreen.setSubScreen(eatScreen);
+      } else {
+        Game.sendMessage(player, "You have nothing to eat!");
+        Game.refresh();
+      }
+      return;
+
     default:
       //not a valid key
       return;

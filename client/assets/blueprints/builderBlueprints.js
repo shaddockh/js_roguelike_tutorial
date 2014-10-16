@@ -29,7 +29,7 @@ Blueprints.FungusLevelBuilder = {
     minItemCount: 10,
     maxItemCount: 15,
     itemList: [
-      'apple', 'rock'
+      'apple', 'rock', 'melon'
     ]
   }
 };

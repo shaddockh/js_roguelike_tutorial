@@ -1,5 +1,6 @@
 module.exports = [
   require('./builderMixins'),
   require('./tileMixins'),
-  require('./mixins')
+  require('./mixins'),
+  require('./itemMixins')
 ];

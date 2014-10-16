@@ -140,6 +140,10 @@ Mixins.Aspect = {
     var prefix = 'aeiou'.indexOf(firstLetter) >= 0 ? 1 : 0;
 
     return prefixes[prefix] + ' ' + string;
+  },
+  describeThe: function (capitalize) {
+    var prefix = capitalize ? 'The' : 'the';
+    return prefix + ' ' + this.describe();
   }
 };
 
@@ -255,8 +259,15 @@ Mixins.PlayerActor = {
   doc: 'Player controller',
   init: function (blueprint) {},
   act: function () {
+    if (this._acting) {
+      return;
+    }
+    this._acting = true;
+    if (this.hasMixin('FoodConsumer')) {
+      this.addTurnHunger();
+    }
     // Detect if the game is over
-    if (this.getHp() < 1) {
+    if (!this.isAlive()) {
       Singletons.ScreenCatalog.getScreen('PlayScreen').setGameEnded(true);
       // Send a last message to the player
       Game.sendMessage(this, 'You have died... Press [Enter] to continue!');
@@ -267,6 +278,7 @@ Mixins.PlayerActor = {
     //for the player to press a key
     Singletons.World.getEngine().lock();
     this.clearMessages();
+    this._acting = false;
   },
   playerActivate: function (x, y, map, activateMessage) {
     this.getMap().getEntitiesAt(x, y).forEach(function (entity) {
@@ -342,20 +354,24 @@ Mixins.Destructible = {
     this._hp = blueprint.hp || this._maxHp;
     this._defenseValue = blueprint.defenseValue || 0;
     this._destroySpawnTemplate = blueprint.destroySpawnTemplate || null;
+    this._destroyMessage = blueprint.destroyMessage || 'You kill the %s!';
   },
   takeDamage: function (attacker, damage) {
     this._hp -= damage;
     // If have 0 or less HP, then remove ourseles from the map
     if (this._hp <= 0) {
-      Game.sendMessage(attacker, 'You kill the %s!', [this.getScreenName()]);
-      Game.sendMessage(this, 'You die!');
+      Game.sendMessage(attacker, this._destroyMessage, [this.getScreenName()]);
       if (this._destroySpawnTemplate) {
         var spawn = new Entity(this._destroySpawnTemplate);
         this.getMap().addEntityAtPosition(spawn, this.getX(), this.getY());
       }
-      // Check if the player died, and if so call their act method to prompt the user.
-      if (this.hasMixin('PlayerActor')) {
-        this.act();
+      // If the entity is a corpse dropper, try to add a corpse
+      if (this.hasMixin('DestroySpawn')) {
+        this.tryDestroySpawn();
+      }
+
+      if (this.hasMixin('Life')) {
+        this.kill();
       } else {
         this.getMap().removeEntity(this);
       }
@@ -534,4 +550,95 @@ Mixins.Item = {
   }
 };
 
+Mixins.Life = {
+  name: 'Life',
+  doc: 'Alive or Dead',
+  init: function (blueprint) {
+    this._alive = typeof (blueprint.alive) === 'undefined' ? true : blueprint.alive;
+  },
+  isAlive: function () {
+    return this._alive;
+  },
+  kill: function (message) {
+    // Only kill once!
+    if (!this._alive) {
+      return;
+    }
+    this._alive = false;
+    message = message || 'You have died!';
+    Game.sendMessage(this, "You have died!");
+
+    // Check if the player died, and if so call their act method to prompt the user.
+    if (this.hasMixin('PlayerActor')) {
+      this.act();
+    } else {
+      this.getMap().removeEntity(this);
+    }
+  }
+};
+
+Mixins.FoodConsumer = {
+  name: 'FoodConsumer',
+  doc: 'Food Consumer',
+  init: function (blueprint) {
+    this._maxFullness = blueprint.maxFullness || 1000;
+    // Start halfway to max fullness if no default value
+    this._fullness = blueprint.fullness || (this._maxFullness / 2);
+    // Number of points to decrease fullness by every turn.
+    this._fullnessDepletionRate = blueprint.fullnessDepletionRate || 1;
+  },
+  addTurnHunger: function () {
+    // Remove the standard depletion points
+    this.modifyFullnessBy(this._fullnessDepletionRate * -1);
+  },
+  modifyFullnessBy: function (points) {
+    this._fullness += points;
+    if (this._fullness <= 0) {
+      this.kill("You have died of starvation!");
+    } else if (this._fullness > this._maxFullness) {
+      this.kill("You choke and die!");
+    }
+  },
+  getHungerState: function () {
+    // Fullness points per percent of max fullness
+    var perPercent = this._maxFullness / 100;
+    // 5% of max fullness or less = starving
+    if (this._fullness <= perPercent * 5) {
+      return 'Starving';
+      // 25% of max fullness or less = hungry
+    } else if (this._fullness <= perPercent * 25) {
+      return 'Hungry';
+      // 95% of max fullness or more = oversatiated
+    } else if (this._fullness >= perPercent * 95) {
+      return 'Oversatiated';
+      // 75% of max fullness or more = full
+    } else if (this._fullness >= perPercent * 75) {
+      return 'Full';
+      // Anything else = not hungry
+    } else {
+      return 'Not Hungry';
+    }
+  }
+};
+
+Mixins.CorpseDropper = {
+  name: 'CorpseDropper',
+  type: 'DestroySpawn',
+  init: function (blueprint) {
+    // Chance of dropping a cropse (out of 100).
+    this._corpseDropRate = blueprint.corpseDropRate || 100;
+  },
+  tryDestroySpawn: function () {
+    if (Math.round(Math.random() * 100) < this._corpseDropRate) {
+      // Create a new corpse item and drop it.
+      var corpse = new Entity('corpse', {
+        Aspect: {
+          screenName: this.getScreenName() + ' corpse',
+          foreground: this.getForeground()
+        }
+      });
+      this.getMap().addEntityAtPosition(corpse, this.getX(), this.getY());
+    }
+  }
+};
 module.exports = Mixins;

@@ -6,6 +6,11 @@ function ItemListScreen(options) {
   // Set up based on the template
   this._caption = options.caption;
   this._okFunction = options.ok;
+
+  // By default, we use the identity function
+  this._isAcceptableFunction = options.isAcceptable || function (x) {
+    return x;
+  };
   // Whether the user can select items at all.
   this._canSelectItem = options.canSelect;
   // Whether the user can select multiple items.
@@ -21,9 +26,22 @@ ItemListScreen.prototype.getParentScreen = function () {
 ItemListScreen.prototype.setup = function (player, items) {
   this._player = player;
   // Should be called before switching to the screen.
-  this._items = items;
+  var count = 0;
+  // Iterate over each item, keeping only the aceptable ones and counting
+  // the number of acceptable items.
+  var that = this;
+  this._items = items.map(function (item) {
+    // Transform the item into null if it's not acceptable
+    if (that._isAcceptableFunction(item)) {
+      count++;
+      return item;
+    } else {
+      return null;
+    }
+  });
   // Clean set of selected indices
   this._selectedIndices = {};
+  return count;
 };
 
 ItemListScreen.prototype.render = function (display) {

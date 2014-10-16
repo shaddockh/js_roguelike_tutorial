@@ -7,7 +7,8 @@ Blueprints.Actor = {
   Aspect: {
     screenName: 'Actor',
     blocksPath: true
-  }
+  },
+  Life: {}
 };
 
 // Player template
@@ -34,6 +35,9 @@ Blueprints.PlayerTemplate = {
   Digger: {},
   InventoryHolder: {
     inventorySlots: 22
+  },
+  FoodConsumer: {
+
   }
 };
 
@@ -74,7 +78,8 @@ Blueprints.BatTemplate = {
   },
   Attacker: {
     attackValue: 4
-  }
+  },
+  CorpseDropper: {}
 };
 
 Blueprints.NewtTemplate = {
@@ -90,7 +95,8 @@ Blueprints.NewtTemplate = {
   },
   Attacker: {
     attackValue: 2
-  }
+  },
+  CorpseDropper: {}
 };
 Blueprints.Item = {
   inherits: '_base',
@@ -102,14 +108,36 @@ Blueprints.Item = {
   },
   Item: {}
 };
+Blueprints.BaseFood = {
+  inherits: 'Item',
+  name: 'BaseFood',
+  Edible: {}
+};
 
 Blueprints.apple = {
-  inherits: 'Item',
+  inherits: 'BaseFood',
   name: 'apple',
   Aspect: {
     character: '%',
     foreground: 'red',
     screenName: 'apple'
+  },
+  Edible: {
+    foodValue: 50
+  }
+};
+
+Blueprints.melon = {
+  inherits: 'BaseFood',
+  name: 'melon',
+  Aspect: {
+    character: '%',
+    foreground: 'brightGreen',
+    screenName: 'melon'
+  },
+  Edible: {
+    foodValue: 35,
+    consumptions: 4
   }
 };
 
@@ -159,6 +187,19 @@ Blueprints.StairsPortal = {
     targetLevel: null,
     targetX: null,
     targetY: null
+  }
+};
+
+Blueprints.corpse = {
+  name: 'corpse',
+  inherits: 'Item',
+  Aspect: {
+    character: '%',
+    screenName: 'Corpse'
+  },
+  Edible: {
+    foodValue: 75,
+    consumptions: 1
   }
 };
 

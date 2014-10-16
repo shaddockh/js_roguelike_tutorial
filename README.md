@@ -111,4 +111,16 @@ Tutorial 10
 * Created a screen Catalog that screens populate and just call ScreenCatalog.getScreen('name') so we can put screen names into templates
 * moved all references to screens to use the new ScreenCatalog singleton
 * moved all calls to Math.random to a new RNG singleton that just delegates to ROT.RNG for now
+* display RNG seed on first screen
+
+Tutorial 11
+====
+* From: http://www.codingcookies.com/2013/09/05/building-a-roguelike-in-javascript-part-11/
+* TODO: need way to override mixin methods and then call the base method.  Maybe have a flag on the mixin? or have something in the init method that causes the mixin system to keep track of the original
+* TODO: need to define some kind of randomized content flag or mixin that can be used to pull from the catalog *only* items matching a random content flag.  ideas would be some kind of 1) random content type.  2) random content level(min/max) 3) random content rarity
+* TODO: adding on to the random content system, maybe have a random content mixin builder?..adding specific mixins to a template randomly?
+* TODO: create a ActionList with all game actions then just map keys to that action list
+* TODO: have actions as lists that have an action as well as a "helptext" and add or remove them from the global "available actions" list.  That way 1) each screen can have it's own actions and 2) each screen can provide a ? help button
+* TODO: Modify the "parentScreen" property to be dynamically set by the screen calling the subscreen
+
 

@@ -1,8 +1,8 @@
 var Singletons = require('./singletons');
 var Dictionary = require('entity-blueprint-manager').Dictionary;
 
-var Entity = function (blueprint) {
-  this._loadBlueprint(blueprint);
+var Entity = function (blueprint, blueprintOverrides) {
+  this._loadBlueprint(blueprint, blueprintOverrides);
 };
 
 var noCopyList = {
