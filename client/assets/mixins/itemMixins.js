@@ -33,4 +33,27 @@ ItemMixins.Edible = {
   }
 };
 
+ItemMixins.Equippable = {
+  name: 'Equippable',
+  doc: 'Allows an item to be equipped',
+  init: function (blueprint) {
+    this._attackValue = blueprint.attackValue || 0;
+    this._defenseValue = blueprint.defenseValue || 0;
+    this._wieldable = blueprint.wieldable || false;
+    this._wearable = blueprint.wearable || false;
+  },
+  getAttackValue: function () {
+    return this._attackValue;
+  },
+  getDefenseValue: function () {
+    return this._defenseValue;
+  },
+  isWieldable: function () {
+    return this._wieldable;
+  },
+  isWearable: function () {
+    return this._wearable;
+  }
+};
+
 module.exports = ItemMixins;

@@ -17,6 +17,7 @@ function ItemListScreen(options) {
   this._canSelectMultipleItems = options.canSelectMultipleItems;
   //the play screen
   this._parentScreen = options.parentScreen;
+  this._hasNoItemOption = options.hasNoItemOption || false;
 }
 
 ItemListScreen.prototype.getParentScreen = function () {
@@ -48,6 +49,9 @@ ItemListScreen.prototype.render = function (display) {
   var letters = 'abcdefghijklmnopqrstuvwxyz';
   // Render the caption in the top row
   display.drawText(0, 0, this._caption);
+  if (this._hasNoItemOption) {
+    display.drawText(0, 1, '0 - no item');
+  }
   var row = 0;
   for (var i = 0; i < this._items.length; i++) {
     // If we have an item, we want to render it.
@@ -58,8 +62,17 @@ ItemListScreen.prototype.render = function (display) {
       // the letter and the item's name.
       var selectionState = (this._canSelectItem && this._canSelectMultipleItems &&
         this._selectedIndices[i]) ? '+' : '-';
+
+      // Check if the item is worn or wielded
+      var suffix = '';
+      //TODO: need to query the item slots for all the items wearable / wieldable
+      if (this._items[i] === this._player.getArmor()) {
+        suffix = ' (wearing)';
+      } else if (this._items[i] === this._player.getWeapon()) {
+        suffix = ' (wielding)';
+      }
       // Render at the correct row and add 2.
-      display.drawText(0, 2 + row, letter + ' ' + selectionState + ' ' + this._items[i].describe());
+      display.drawText(0, 2 + row, letter + ' ' + selectionState + ' ' + this._items[i].describe() + suffix);
       row++;
     }
   }
@@ -89,6 +102,10 @@ ItemListScreen.prototype.handleInput = function (inputType, inputData) {
       this.getParentScreen().setSubScreen(undefined);
       // Handle pressing return when items are selected
     } else if (inputData.keyCode === ROT.VK_RETURN) {
+      this.executeOkFunction();
+      // Handle pressing zero when 'no item' selection is enabled
+    } else if (this._canSelectItem && this._hasNoItemOption && inputData.keyCode === ROT.VK_0) {
+      this._selectedIndices = {};
       this.executeOkFunction();
       // Handle pressing a letter if we can select
     } else if (this._canSelectItem && inputData.keyCode >= ROT.VK_A &&

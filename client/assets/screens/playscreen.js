@@ -113,6 +113,72 @@ playScreen.setGameEnded = function (value) {
   playScreen.gameEnded = value;
 };
 
+playScreen.moveLeft = function () {
+  playScreen.move(-1, 0);
+};
+
+playScreen.moveRight = function () {
+  playScreen.move(1, 0);
+};
+
+playScreen.moveUp = function () {
+  playScreen.move(0, -1);
+};
+
+playScreen.moveDown = function () {
+  playScreen.move(0, 1);
+};
+
+playScreen.showInventory = function () {
+  playScreen.showItemsSubScreen('InventoryScreen', player.getItems(), 'You are not carrying anything.');
+};
+
+playScreen.dropItem = function () {
+  playScreen.showItemsSubScreen('DropScreen', player.getItems(), 'You have nothing to drop.');
+};
+
+playScreen.pickupItem = function () {
+  var items = world.getActiveLevel().queryEntitiesAt(player.getX(), player.getY(), function (entity) {
+    return entity.hasMixin('item');
+  });
+  // If there is only one item, directly pick it up
+  if (items && items.length === 1) {
+    var item = items[0];
+    if (player.pickupItems([0])) {
+      Game.sendMessage(player, "You pick up %s.", [item.describeA()]);
+    } else {
+      Game.sendMessage(player, "Your inventory is full! Nothing was picked up.");
+    }
+  } else {
+    playScreen.showItemsSubScreen('PickupScreen', items, 'There is nothing here to pick up.');
+  }
+};
+
+playScreen.eatItem = function () {
+  playScreen.showItemsSubScreen('EatScreen', player.getItems(), 'You have nothing to eat.');
+};
+
+playScreen.showWearScreen = function () {
+  playScreen.showItemsSubScreen('WearScreen', player.getItems(), 'You have nothing to wear.');
+};
+
+playScreen.showWieldScreen = function () {
+  playScreen.showItemsSubScreen('WieldScreen', player.getItems(), 'You have nothing to wield.');
+};
+
+playScreen.showItemsSubScreen = function (subScreen, items, emptyMessage) {
+  if (typeof (subScreen) === 'string') {
+    subScreen = Singletons.ScreenCatalog.getScreen(subScreen);
+  }
+
+  if (items && subScreen.setup(player, items) > 0) {
+    playScreen.setSubScreen(subScreen);
+  } else {
+    Game.sendMessage(player, emptyMessage);
+    Game.refresh();
+  }
+};
+
 playScreen.handleInput = function (inputType, inputData) {
   // If the game is over, enter will bring the user to the losing screen.
   if (playScreen.gameEnded) {
@@ -142,79 +208,38 @@ playScreen.handleInput = function (inputType, inputData) {
       // Movement
     case ROT.VK_LEFT:
     case ROT.VK_H:
-      playScreen.move(-1, 0);
+      playScreen.moveLeft();
       break;
     case ROT.VK_RIGHT:
     case ROT.VK_L:
-      playScreen.move(1, 0);
+      playScreen.moveRight();
       break;
     case ROT.VK_UP:
     case ROT.VK_K:
-      playScreen.move(0, -1);
+      playScreen.moveUp();
       break;
     case ROT.VK_DOWN:
     case ROT.VK_J:
-      playScreen.move(0, 1);
+      playScreen.moveDown();
       break;
     case ROT.VK_I:
-      if (player.getItems().filter(function (x) {
-        return x;
-      }).length === 0) {
-        // If the player has no items, send a message and don't take a turn
-        Game.sendMessage(player, "You are not carrying anything!");
-        Game.refresh();
-      } else {
-        // Show the inventory
-        var inventoryScreen = Singletons.ScreenCatalog.getScreen('InventoryScreen');
-        inventoryScreen.setup(player, player.getItems());
-        playScreen.setSubScreen(inventoryScreen);
-      }
+      playScreen.showInventory();
       return;
     case ROT.VK_D:
-      if (player.getItems().filter(function (x) {
-        return x;
-      }).length === 0) {
-        // If the player has no items, send a message and don't take a turn
-        Game.sendMessage(player, "You have nothing to drop!");
-        Game.refresh();
-      } else {
-        // Show the drop screen
-        var dropScreen = Singletons.ScreenCatalog.getScreen('DropScreen');
-        dropScreen.setup(player, player.getItems());
-        playScreen.setSubScreen(dropScreen);
-      }
+      playScreen.dropItem();
       return;
     case ROT.VK_COMMA:
-      var items = world.getActiveLevel().queryEntitiesAt(player.getX(), player.getY(), function (entity) {
-        return entity.hasMixin('item');
-      });
-      // If there are no items, show a message
-      if (!items.length) {
-        Game.sendMessage(player, "There is nothing here to pick up.");
-      } else if (items.length === 1) {
-        // If only one item, try to pick it up
-        var item = items[0];
-        if (player.pickupItems([0])) {
-          Game.sendMessage(player, "You pick up %s.", [item.describeA()]);
-        } else {
-          Game.sendMessage(player, "Your inventory is full! Nothing was picked up.");
-        }
-      } else {
-        // Show the pickup screen if there are any items
-        var pickupScreen = Singletons.ScreenCatalog.getScreen('PickupScreen');
-        pickupScreen.setup(player, items);
-        playScreen.setSubScreen(pickupScreen);
-        return;
-      }
+      playScreen.pickupItem();
       break;
     case ROT.VK_E:
-      // Show the drop screen
-      var eatScreen = Singletons.ScreenCatalog.getScreen('EatScreen');
-      if (eatScreen.setup(player, player.getItems())) {
-        playScreen.setSubScreen(eatScreen);
+      // Show the eat screen
+      playScreen.eatItem();
+      return;
+    case ROT.VK_W:
+      if (inputData.shiftKey) {
+        playScreen.showWearScreen();
       } else {
-        Game.sendMessage(player, "You have nothing to eat!");
-        Game.refresh();
+        playScreen.showWieldScreen();
       }
       return;
 

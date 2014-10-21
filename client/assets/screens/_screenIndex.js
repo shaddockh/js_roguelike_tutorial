@@ -6,5 +6,7 @@ module.exports = {
   'PickupScreen': require('./pickupscreen'),
   'PlayScreen': require('./playscreen'),
   'StartScreen': require('./startscreen'),
+  'WearScreen': require('./wearscreen'),
+  'WieldScreen': require('./wieldscreen'),
   'WinScreen': require('./winscreen')
 };

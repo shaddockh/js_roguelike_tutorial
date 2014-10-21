@@ -124,3 +124,11 @@ Tutorial 11
 * TODO: Modify the "parentScreen" property to be dynamically set by the screen calling the subscreen
 
 
+Tutorial 12
+====
+* From: http://www.codingcookies.com/2013/09/06/building-a-roguelike-in-javascript-part-12/
+* renamed "equipper" to "equipslots"
+* TODO: refactor the equippable to have a Attack and Defense block and use those for items as well as entities.  
+* Added to EquipSlots the methods: getEquippedAttackValue and getEquippedDefenseValue.  Attacker and Destructable now use those 
+* Started extracting out the PlayScreen actions into separate methods and just have the handleInput call those in preparation for being able to externalize keybindings
+
