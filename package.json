@@ -33,14 +33,28 @@
     "sprintf-js": "0.0.7"
   },
   "dependencies": {
-    "bootstrap": "^3.2.0",
-    "folderify": "^0.6.0",
-    "jquery": "latest"
+    "browserify-shim": "^3.8.0",
+    "folderify": "^0.6.0"
   },
   "browserify": {
     "transform": [
+      "browserify-shim",
       "debowerify",
       "folderify"
     ]
+  },
+  "browserify-shim": {
+    "jquery": "$",
+    "rot": "ROT",
+    "bootstrap": {
+      "depends": [
+        "jquery"
+      ]
+    }
+  },
+  "browser": {
+    "rot": "./bower_components/rot.js/rot.js",
+    "bootstrap": "./bower_components/bootstrap/dist/js/bootstrap.min.js",
+    "jquery": "./bower_components/jquery/dist/jquery.js"
   }
 }

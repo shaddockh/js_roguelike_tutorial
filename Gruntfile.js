@@ -5,20 +5,20 @@ module.exports = function (grunt) {
   grunt.initConfig({
     pkg: grunt.file.readJSON('package.json'),
     jshint: {
-      all: ['Gruntfile.js'].concat(scriptdirs),
+      all: ['Gruntfile.js', 'bower.json', 'package.json'].concat(scriptdirs),
       options: {
         jshintrc: '.jshintrc'
       }
     },
     jsbeautifier: {
       modify: {
-        src: ['Gruntfile.js'].concat(scriptdirs),
+        src: ['Gruntfile.js', 'bower.json', 'package.json'].concat(scriptdirs),
         options: {
           config: '.jsbeautifyrc'
         }
       },
       verify: {
-        src: ['Gruntfile.js'].concat(scriptdirs),
+        src: ['Gruntfile.js', 'bower.json', 'package.json'].concat(scriptdirs),
         options: {
           mode: 'VERIFY_ONLY',
           config: '.jsbeautifyrc'
@@ -26,23 +26,9 @@ module.exports = function (grunt) {
       }
     },
     browserify: {
-      //dist: {
-      //  files: {
-      //    'dist/app.js': ['bower_components/**/*.js'].concat(scriptdirs)
-      //  },
-      //  options: {
-      //    debug: true,
-      //    shim: {
-      //      rot: {
-      //        path: "bower_components/rot.js/rot.js",
-      //        exports: "ROT"
-      //      }
-      //    },
-      //    transform: ['debowerify', 'folderify']
-      //  }
-      //},
       all: {
-        src: 'client/app.js',
+        //src: 'client/app.js',
+        src: ['client/app.js'],
         dest: 'dist/app.js',
         options: {
           debug: true,
@@ -50,7 +36,7 @@ module.exports = function (grunt) {
         }
       },
       debug: {
-        src: ['client/app.js', 'bower_components/**/*.js'],
+        src: ['client/app.js'],
         dest: 'dist/app.js',
         options: {
           debug: true,
@@ -60,10 +46,17 @@ module.exports = function (grunt) {
     },
     copy: {
       client: {
-        expand: true,
-        cwd: 'client/',
-        src: ['**/*.html', '**/*.css'],
-        dest: 'dist/'
+        files: [{
+          expand: true,
+          cwd: 'client/',
+          src: ['**/*.html', '**/*.css'],
+          dest: 'dist/'
+        }, {
+          expand: true,
+          cwd: 'bower_components/bootstrap/dist/',
+          src: ['**/*.min.css'],
+          dest: 'dist/'
+        }]
       }
     },
     connect: {
