@@ -31,16 +31,20 @@ module.exports = function (grunt) {
         src: ['client/app.js'],
         dest: 'dist/app.js',
         options: {
-          debug: true,
-          transform: ['debowerify', 'folderify']
+          bunder: {
+            debug: true,
+            transform: ['debowerify', 'folderify']
+          }
         }
       },
       debug: {
         src: ['client/app.js'],
         dest: 'dist/app.js',
         options: {
-          debug: true,
-          transform: ['debowerify', 'folderify']
+          bundle: {
+            debug: true,
+            transform: ['debowerify', 'folderify']
+          }
         }
       }
     },

@@ -1,6 +1,6 @@
 var Singletons = require('./singletons');
 var WorldBuilder = require('./worldbuilder');
-var ROT = require('./rot');
+var ROT = require('rot');
 
 //Correponds to "World" in the other tutorial
 
@@ -161,9 +161,9 @@ Level.prototype.getTile = function (x, y) {
   // Make sure we are inside the bounds. If we aren't, return
   // null tile.
   if (!this.isInBounds(x, y)) {
-    return Singletons.TileCatalog.getItem('nullTile');
+    return Singletons.TileCatalog.get('nullTile');
   } else {
-    return this._tiles[x][y] || Singletons.TileCatalog.getItem('nullTile');
+    return this._tiles[x][y] || Singletons.TileCatalog.get('nullTile');
   }
 };
 
@@ -200,7 +200,7 @@ Level.prototype.isEmptyFloor = function (x, y) {
 Level.prototype.dig = function (x, y) {
   // If the tile is diggable, update it to a floor
   if (this.getTile(x, y).isDiggable()) {
-    this._tiles[x][y] = Singletons.TileCatalog.getItem('floorTile');
+    this._tiles[x][y] = Singletons.TileCatalog.get('floorTile');
   }
 };
 

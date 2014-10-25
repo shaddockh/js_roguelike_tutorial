@@ -3,6 +3,7 @@ Mixins.Tile = {
   name: 'Tile',
   obsolete: false,
   type: 'Tile',
+  doc: 'Base tile.  Used for all tile elements on the map.  Is not instanced, but reused for each type of tile on the map',
   init: function (blueprint) {
     this._isDiggable = blueprint.isDiggable || false;
     this._isWalkable = blueprint.isWalkable || false;

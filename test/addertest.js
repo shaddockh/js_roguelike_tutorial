@@ -1,5 +1,6 @@
 /* global describe,it */
 'use strict';
+//var Singletons = require('../client/assets/Singletons');
 
 //var rot = require('../client/assets/rot');
 describe('Adder test', function () {

@@ -1,5 +1,3 @@
-var ROT = require('../rot');
-
 var loseScreen = require('./basescreen')('Lose');
 
 // Define our winning screen

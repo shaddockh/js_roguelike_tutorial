@@ -1,5 +1,5 @@
 var Game = require('../game');
-var ROT = require('../rot');
+var ROT = require('rot');
 var Singletons = require('../singletons');
 
 var playScreen = require('./basescreen')('Play');

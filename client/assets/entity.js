@@ -33,17 +33,28 @@ Entity.prototype._loadBlueprint = function (blueprint, blueprintOverrides) {
   for (var componentKey in blueprint) {
     if (typeof (blueprint[componentKey]) === 'object') {
       //we have a component reference, grab it from the library and instantiate a mixin instance
-      var mixin = Singletons.MixinCatalog.getMixin(componentKey);
-
-      if (mixin.obsolete) {
-        console.error('adding obsolete mixin: ' + componentKey + ' to ' + this._name);
-      }
-      this.attachMixin(mixin, blueprint[componentKey]);
+      this.attachMixin(componentKey, blueprint[componentKey]);
     }
   }
 };
 
 Entity.prototype.attachMixin = function (mixin, blueprint) {
+
+  var catalog = Singletons.MixinCatalog;
+
+  if (typeof (mixin) === 'string') {
+    mixin = catalog.getMixin(mixin);
+  }
+
+  if (mixin.obsolete) {
+    console.error('adding obsolete mixin: ' + mixin.name + ' to ' + this._name);
+  }
+  //Let's look for Mixin Inheritance
+  var parentMixin = null;
+  if (mixin.type && mixin.type !== mixin.name && catalog.hasMixin(mixin.type)) {
+    parentMixin = catalog.getMixin(mixin.type);
+    this.attachMixin(parentMixin, blueprint);
+  }
 
   // Copy over all properties from each mixin as long
   // as it's not the name or the init property. We
@@ -53,7 +64,8 @@ Entity.prototype.attachMixin = function (mixin, blueprint) {
     if (mixin.hasOwnProperty(key)) {
       //Don't copy over any private properties or 'nocopy' items
       if (!noCopyList[key] && key[0] !== '_') {
-        if (this.hasOwnProperty(key)) {
+        //TODO: check against parent mixin and override as appropriate
+        if (this.hasOwnProperty(key) && (!parentMixin || !parentMixin.hasOwnProperty(key))) {
           console.error(this.getName() + ': Conflict attaching mixin property: ' + mixin.name + '.' + key + ' - property/method already exists.', this._attachedMixins);
         } else {
           this[key] = mixin[key];
@@ -73,7 +85,7 @@ Entity.prototype.attachMixin = function (mixin, blueprint) {
 
   // Finally call the init function if there is one
   if (mixin.init) {
-    mixin.init.call(this, blueprint);
+    mixin.init.call(this, blueprint, mixin, Singletons.MixinCatalog);
   }
 };
 

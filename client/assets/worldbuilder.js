@@ -1,4 +1,4 @@
-var ROT = require('./rot');
+var ROT = require('rot');
 var Level = require('./level');
 var Singletons = require('./singletons');
 var Game = require('./game');
@@ -102,12 +102,12 @@ var WorldBuilder = (function () {
     }
     // Select the first tile from the overlap and change it to stairs
     var point = overlap[0];
-    upperLevelBuilder.getLevel().setTile(point.x, point.y, Singletons.TileCatalog.getItem('stairsDownTile'));
+    upperLevelBuilder.getLevel().setTile(point.x, point.y, Singletons.TileCatalog.get('stairsDownTile'));
     var entity = new Entity('StairsPortal');
     entity.setPortalTarget(lowerLevelBuilder.getLevel().getLevelId(), point.x, point.y);
     upperLevelBuilder.getLevel().addEntityAtPosition(entity, point.x, point.y);
 
-    lowerLevelBuilder.getLevel().setTile(point.x, point.y, Singletons.TileCatalog.getItem('stairsUpTile'));
+    lowerLevelBuilder.getLevel().setTile(point.x, point.y, Singletons.TileCatalog.get('stairsUpTile'));
     entity = new Entity('StairsPortal');
     entity.setPortalTarget(upperLevelBuilder.getLevel().getLevelId(), point.x, point.y);
     lowerLevelBuilder.getLevel().addEntityAtPosition(entity, point.x, point.y);

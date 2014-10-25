@@ -10,7 +10,7 @@ var ScreenCatalog = (function () {
   }
 
   function getScreen(name) {
-    return catalog.getItem(name);
+    return catalog.get(name);
   }
   return {
     addScreen: addScreen,

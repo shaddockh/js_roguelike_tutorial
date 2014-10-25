@@ -1,12 +1,12 @@
 var Singletons = require('../singletons');
-var ROT = require('../rot');
+var ROT = require('rot');
 var Level = require('../level');
 var Game = require('../game');
 var Entity = require('../entity');
 var WorldBuilder = require('../worldbuilder');
 
 function buildTilesArray(width, height) {
-  return WorldBuilder.build2DArray(width, height, Singletons.TileCatalog.getItem('nullTile'));
+  return WorldBuilder.build2DArray(width, height, Singletons.TileCatalog.get('nullTile'));
 }
 
 var Mixins = {};
@@ -114,7 +114,7 @@ Mixins.RegionBuilder = {
   // This removes all tiles at a given depth level with a region number.
   // It fills the tiles with a wall tile.
   removeRegion: function (region) {
-    var fillTile = Singletons.TileCatalog.getItem(this._regionWallTile);
+    var fillTile = Singletons.TileCatalog.get(this._regionWallTile);
     for (var x = 0; x < this._width; x++) {
       for (var y = 0; y < this._height; y++) {
         if (this._regions[x][y] === region) {
@@ -171,9 +171,9 @@ Mixins.CellularAutomataTerrainBuilder = {
     // Smoothen it one last time and then update our map
     generator.create(function (x, y, v) {
       if (v === 1) {
-        tiles[x][y] = Singletons.TileCatalog.getItem('floorTile');
+        tiles[x][y] = Singletons.TileCatalog.get('floorTile');
       } else {
-        tiles[x][y] = Singletons.TileCatalog.getItem('wallTile');
+        tiles[x][y] = Singletons.TileCatalog.get('wallTile');
       }
     });
     this.setLevel(new Level(tiles, this.getLevelId()));
@@ -204,6 +204,7 @@ Mixins.RandomPositionCreatureBuilder = {
   }
 };
 
+//TODO: need to be able to specify multiple blocks of items with different %
 Mixins.RandomPositionItemBuilder = {
   name: 'RandomPositionItemBuilder',
   type: 'ItemBuilder',
@@ -257,9 +258,9 @@ Mixins.UniformTerrainBuilder = {
     //create our map
     generator.create(function (x, y, v) {
       if (v === 1) {
-        tiles[x][y] = Singletons.TileCatalog.getItem('floorTile');
+        tiles[x][y] = Singletons.TileCatalog.get('floorTile');
       } else {
-        tiles[x][y] = Singletons.TileCatalog.getItem('wallTile');
+        tiles[x][y] = Singletons.TileCatalog.get('wallTile');
       }
     });
     this.setLevel(new Level(tiles));

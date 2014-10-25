@@ -132,3 +132,13 @@ Tutorial 12
 * Added to EquipSlots the methods: getEquippedAttackValue and getEquippedDefenseValue.  Attacker and Destructable now use those 
 * Started extracting out the PlayScreen actions into separate methods and just have the handleInput call those in preparation for being able to externalize keybindings
 
+Tutorial 14
+====
+* From: http://www.codingcookies.com/2013/09/07/building-a-roguelike-in-javascript-part-13/
+* DONE: figure out a way to either have a mixin 'type' validate against a common interface to make sure all elements are represented or define a base mixin 'type' that will be descended from when populating the mixin (ie: make sure all mixins of type 'Actor' have the speed component)
+* If a mixin 'type' is not the same name as the mixin, the system will first load up and initialize the mixin 'type' mixin, then load up and initialize the mixin requested.  This allows for very simple mixin inheritance.  For example, Actor contains a speed property.  TaskActor, WanderActor, etc. don't need to provide this property since they 'descend' from actor and actor will be loaded and initialized before TaskActor.
+* Added bootstrap in the Bower components
+* figured out how to use Bower components with Browserify properly by adding a shim to the package.json
+* removed the hacky way of accessing rot.js and am now using the Bower version
+* added tabs on main page for Game, Blueprints, Mixins, Settings ... WIP
+* reworked the TaskActor mixin to break out the tasks as separate mixins.  If you supply the ActorTasks[] with TaskAI names, it will automatically load and register those mixins.  You can always add the AI Task mixins yourself as well if you need to pass parameters to the AI Tasks

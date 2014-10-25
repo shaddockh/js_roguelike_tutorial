@@ -1,4 +1,4 @@
-var ROT = require('../rot');
+var ROT = require('rot');
 var Singletons = require('../singletons');
 
 function ItemListScreen(options) {

@@ -1,6 +1,6 @@
 //Random number generator
 
-var ROT = require('./rot');
+var ROT = require('rot');
 var RNG = (function () {
 
   var api = {};

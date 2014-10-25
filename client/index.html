@@ -1,14 +1,27 @@
-
 <!DOCTYPE html>
-<html>
-  <head>
+<html lange="en">
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>Javascript Roguelike</title>
-  </head>
-  <body>
-      <script src="app.js" type="text/javascript"></script>
-    <!--<script src="https://raw.github.com/ondras/rot.js/master/rot.min.js"></script>-->
-    <!--<script src="assets/game.js"></script>-->
-  </body>
+    <head>
+        <link href="css/bootstrap.min.css" rel="stylesheet">
+    </head>
+    <body>
+        <ul class="nav nav-tabs" role="tablist" id="tabStrip">
+          <li class="active"><a href="#game" role="tab" data-toggle="tab">Game</a></li>
+          <li><a href="#blueprints" role="tab" data-toggle="tab">Blueprints</a></li>
+          <li><a href="#mixins" role="tab" data-toggle="tab">Mixins</a></li>
+          <li><a href="#settings" role="tab" data-toggle="tab">Settings</a></li>
+        </ul>
+        <div class="tab-content">
+      <div class="tab-pane active" id="game"></div>
+      <div class="tab-pane" id="blueprints"></div>
+      <div class="tab-pane" id="mixins"></div>
+      <div class="tab-pane" id="settings"></div>
+</div>
+        <script src="app.js" type="text/javascript"></script>
+    </body>
 </html>
 
 

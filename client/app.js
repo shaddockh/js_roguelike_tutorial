@@ -1,15 +1,15 @@
-(function ($) {
-  window.$ = $;
+(function () {
+  var $ = require('jquery');
+  //window.$ = $;
   $(document).ready(function () {
     var Game = require('./assets/game');
+    var dashboardController = require('./dashboard/dashboardcontroller');
 
+    var bootstrap = require('bootstrap');
     if (Game.canRun()) {
-      Game.init();
-      // Add the container to our HTML page
-      document.body.appendChild(Game.getDisplay().getContainer());
-      // Load the start screen
-
-      Game.switchScreen(require('./assets/singletons').ScreenCatalog.getScreen('StartScreen'));
+      Game.init($('#game'));
+      dashboardController.init();
     }
+    $('#tabStrip a:first').tab('show');
   });
-})(require('jquery/dist/jquery.min'));
+})();

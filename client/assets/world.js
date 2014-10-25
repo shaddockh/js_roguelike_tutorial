@@ -1,7 +1,8 @@
 var World = function () {
-  var ROT = require('./rot');
+  var ROT = require('rot');
   //TODO: these should be passed in
-  this._scheduler = new ROT.Scheduler.Simple();
+  //this._scheduler = new ROT.Scheduler.Simple();
+  this._scheduler = new ROT.Scheduler.Speed();
   this._engine = new ROT.Engine(this._scheduler);
   this._levels = {};
   this._activeLevelId = null;

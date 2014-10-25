@@ -1,5 +1,6 @@
 module.exports = [
   require('./builderBlueprints'),
   require('./tileBlueprints'),
-  require('./entityBlueprints')
+  require('./entityBlueprints'),
+  require('./actorBlueprints')
 ];

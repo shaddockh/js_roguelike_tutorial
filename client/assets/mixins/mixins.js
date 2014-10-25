@@ -40,7 +40,7 @@ Mixins.Debug = {
 Mixins.Activateable = {
   name: 'Activateable',
   obsolete: false,
-  type: 'Activatable',
+  type: 'Activateable',
   doc: 'Allows components to register for activate messages',
   init: function (blueprint) {
     this._registeredActivateCallbacks = [];
@@ -89,6 +89,7 @@ Mixins.Aspect = {
   name: 'Aspect',
   obsolete: false,
   type: 'Aspect',
+  doc: 'Handles the visual for an entity.  Will draw itself onto the screen',
   init: function (blueprint) {
     this._character = blueprint.character;
     this._foreground = blueprint.foreground;
@@ -253,98 +254,6 @@ Mixins.Position = {
   }
 };
 
-Mixins.PlayerActor = {
-  name: 'PlayerActor',
-  type: 'Actor',
-  doc: 'Player controller',
-  init: function (blueprint) {},
-  act: function () {
-    if (this._acting) {
-      return;
-    }
-    this._acting = true;
-    if (this.hasMixin('FoodConsumer')) {
-      this.addTurnHunger();
-    }
-    // Detect if the game is over
-    if (!this.isAlive()) {
-      Singletons.ScreenCatalog.getScreen('PlayScreen').setGameEnded(true);
-      // Send a last message to the player
-      Game.sendMessage(this, 'You have died... Press [Enter] to continue!');
-    }
-    //Re-render the screen
-    Game.refresh();
-    //lock the engine and wait asynchronously
-    //for the player to press a key
-    Singletons.World.getEngine().lock();
-    this.clearMessages();
-    this._acting = false;
-  },
-  playerActivate: function (x, y, map, activateMessage) {
-    this.getMap().getEntitiesAt(x, y).forEach(function (entity) {
-      if (entity.hasMixin('activateable')) {
-        entity.activate(activateMessage);
-      }
-    });
-  }
-};
-
-Mixins.FungusActor = {
-  name: 'FungusActor',
-  type: 'Actor',
-  doc: 'Monster (Fungus)',
-  init: function (blueprint) {
-    this._growthsRemaining = blueprint.growths || 5;
-    this._templateToSpawn = blueprint.templateToSpawn || 'FungusTemplate';
-  },
-  act: function () {
-    // Check if we are going to try growing this turn
-    if (this._growthsRemaining > 0) {
-      if (Singletons.RNG.random() <= 0.02) {
-        // Generate the coordinates of a random adjacent square by
-        // generating an offset between [-1, 0, 1] for both the x and
-        // y directions. To do this, we generate a number from 0-2 and then
-        // subtract 1.
-        var xOffset = Singletons.RNG.randomIntInRange(0, 2);
-        var yOffset = Singletons.RNG.randomIntInRange(0, 2);
-        // Make sure we aren't trying to spawn on the same tile as us
-        if (xOffset !== 0 && yOffset !== 0) {
-          // Check if we can actually spawn at that location, and if so
-          // then we grow!
-          if (this.getMap().isEmptyFloor(this.getX() + xOffset,
-            this.getY() + yOffset)) {
-
-            var entity = new Entity(this._templateToSpawn);
-            entity.setPosition(this.getX() + xOffset, this.getY() + yOffset);
-            this.getMap().addEntity(entity);
-            this._growthsRemaining--;
-            // Send a message nearby!
-            Game.sendMessageNearby(this.getMap(),
-              entity.getX(), entity.getY(), 5,
-              'The fungus is spreading!');
-          }
-        }
-      }
-    }
-  }
-};
-
-Mixins.WanderingActor = {
-  name: 'WanderingActor',
-  type: 'Actor',
-  doc: 'Wandering actor.  Just randomly wanders around',
-  act: function () {
-    // Flip coin to determine if moving by 1 in the positive or negative direction
-    var moveOffset = (Math.round(Singletons.RNG.random()) === 1) ? 1 : -1;
-    // Flip coin to determine if moving in x direction or y direction
-    if (Math.round(Singletons.RNG.random()) === 1) {
-      this.tryMove(this.getX() + moveOffset, this.getY());
-    } else {
-      this.tryMove(this.getX(), this.getY() + moveOffset);
-    }
-  }
-};
-
 Mixins.Destructible = {
   name: 'Destructible',
   type: 'Destructible',
@@ -474,6 +383,42 @@ Mixins.Sight = {
   },
   getSightRadius: function () {
     return this._sightRadius;
+  },
+  canSee: function (entity) {
+    // If not on the same map or on different floors, then exit early
+    if (!entity || this.getMap() !== entity.getMap()) {
+      return false;
+    }
+
+    var otherX = entity.getX(),
+      otherY = entity.getY(),
+      x = this.getX(),
+      y = this.getY();
+
+    var sightRadius = this.getSightRadius();
+
+    var leftX = x - sightRadius,
+      rightX = x + sightRadius,
+      topY = y - sightRadius,
+      bottomY = y + sightRadius;
+
+    // If we're not in a square field of view, then we won't be in a real
+    // field of view either.
+    if (!entity.isInBounds(leftX, topY, rightX, bottomY)) {
+      return false;
+    }
+
+    // Compute the FOV and check if the coordinates are in there.
+    var found = false;
+
+    var level = this.getMap();
+    level.getFov().compute(
+      x, y, sightRadius, function (x, y, radius, visibility) {
+        if (x === otherX && y === otherY) {
+          found = true;
+        }
+      });
+    return found;
   }
 };
 

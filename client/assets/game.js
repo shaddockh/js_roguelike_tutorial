@@ -2,7 +2,7 @@
 
 //NOTE: This is a singleton
 
-var ROT = require('./rot');
+var ROT = require('rot');
 var Singletons = require('./singletons');
 
 var _display = null,
@@ -22,7 +22,7 @@ function bindEventToScreen(event) {
   });
 }
 
-Game.init = function () {
+Game.init = function ($container) {
   _display = new ROT.Display({
     width: Game.config.screenWidth,
     height: Game.config.screenHeight + 1
@@ -31,6 +31,11 @@ Game.init = function () {
   bindEventToScreen('keydown');
   bindEventToScreen('keypress');
   Singletons.initialize();
+
+  // Add the container to our HTML page
+  $container.append(Game.getDisplay().getContainer());
+  // Load the start screen
+  Game.switchScreen(Singletons.ScreenCatalog.getScreen('StartScreen'));
 };
 
 Game.refresh = function () {
