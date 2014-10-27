@@ -142,3 +142,8 @@ Tutorial 13
 * removed the hacky way of accessing rot.js and am now using the Bower version
 * added tabs on main page for Game, Blueprints, Mixins, Settings ... WIP
 * reworked the TaskActor mixin to break out the tasks as separate mixins.  If you supply the ActorTasks[] with TaskAI names, it will automatically load and register those mixins.  You can always add the AI Task mixins yourself as well if you need to pass parameters to the AI Tasks
+
+Tutorial 14
+====
+* From: http://www.codingcookies.com/2013/09/14/building-a-roguelike-in-javascript-part-14/
+* Started adding stats to be logged from the world building routines

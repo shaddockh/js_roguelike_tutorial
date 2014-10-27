@@ -2,6 +2,7 @@
 var Singletons = require('./../singletons');
 var Game = require('./../game');
 var Entity = require('./../entity');
+var Dictionary = require('entity-blueprint-manager').Dictionary;
 
 var Mixins = {};
 
@@ -13,7 +14,52 @@ var BaseMixin = function (name, type) {
     init: function (blueprint) {}
   };
 };
+Mixins.ReportStatistics = {
+  name: 'ReportStatistics',
+  doc: 'captures statistics to dump to the console',
 
+  init: function (blueprint) {
+    this._statisticCategories = new Dictionary({
+      ignoreCase: true
+    });
+
+  },
+  incStatistic: function (category, stat, delta) {
+    if (!this._statisticCategories.containsKey(category)) {
+      this._statisticCategories.add(category, new Dictionary({
+        ignoreCase: true
+      }));
+    }
+    var cat = this._statisticCategories.get(category);
+    if (!cat.containsKey(stat)) {
+      cat.add(stat, {
+        count: 0
+      });
+    }
+    cat.get(stat).count++;
+  },
+  /**
+   * returns a Dictionary
+   * @param category
+   * @returns {*}
+   */
+  getCategoryStats: function (category) {
+    return this._statisticCategories.get(category);
+  },
+  getStats: function (category, statistic) {
+    return this.getCategoryStats(category).get(statistic);
+  },
+  dumpStatistics: function () {
+    var cats = this._statisticCategories;
+    cats.forEach(function (cat, name) {
+      console.log('Statistics for ' + name);
+      var out = [];
+      cat.forEach(function (stat, statName) {
+        console.log(statName, stat);
+      });
+    });
+  }
+};
 Mixins.Debug = {
   name: 'Debug',
   obsolete: false,
@@ -281,10 +327,31 @@ Mixins.Destructible = {
 
       if (this.hasMixin('Life')) {
         this.kill();
+
+        if (attacker.hasMixin('ExperienceGainer')) {
+          var exp = this.calculateXp(attacker);
+          // Only give experience if more than 0.
+          if (exp > 0) {
+            attacker.giveExperience(exp);
+          }
+        }
       } else {
         this.getMap().removeEntity(this);
       }
+
     }
+  },
+  calculateXp: function (attacker) {
+    //TODO: move the XP calculation into either a separate mixin or some kind of formulas module
+    var exp = this.getMaxHp() + this.getDefenseValue();
+    if (this.hasMixin('Attacker')) {
+      exp += this.getAttackValue();
+    }
+    // Account for level differences
+    if (this.hasMixin('ExperienceGainer')) {
+      exp -= (attacker.getLevel() - this.getLevel()) * 3;
+    }
+    return exp;
   },
   getHp: function () {
     return this._hp;
@@ -309,6 +376,25 @@ Mixins.Destructible = {
   },
   setDefenseValue: function (value) {
     this._defenseValue = value;
+  },
+  increaseDefenseValue: function (value, quiet) {
+    // If no value was passed, default to 2.
+    value = value || 2;
+    // Add to the defense value.
+    this._defenseValue += value;
+    if (!quiet) {
+      Game.sendMessage(this, "You look tougher!");
+    }
+  },
+  increaseMaxHp: function (value, quiet) {
+    // If no value was passed, default to 10.
+    value = value || 10;
+    // Add to both max HP and HP.
+    this._maxHp += value;
+    this._hp += value;
+    if (!quiet) {
+      Game.sendMessage(this, "You look healthier!");
+    }
   }
 };
 
@@ -330,6 +416,15 @@ Mixins.Attacker = {
   },
   setAttackValue: function (value) {
     this._attackValue = value;
+  },
+  increaseAttackValue: function (value, quiet) {
+    // If no value was passed, default to 2.
+    value = value || 2;
+    // Add to the attack value.
+    this._attackValue += value;
+    if (!quiet) {
+      Game.sendMessage(this, "You look stronger!");
+    }
   },
   canAttack: function (target) {
 
@@ -383,6 +478,15 @@ Mixins.Sight = {
   },
   getSightRadius: function () {
     return this._sightRadius;
+  },
+  increaseSightRadius: function (value, quiet) {
+    // If no value was passed, default to 1.
+    value = value || 1;
+    // Add to sight radius.
+    this._sightRadius += value;
+    if (!quiet) {
+      Game.sendMessage(this, "You are more aware of your surroundings!");
+    }
   },
   canSee: function (entity) {
     // If not on the same map or on different floors, then exit early
@@ -658,6 +762,110 @@ Mixins.EquipSlots = {
       modifier += this.getArmor().getAttackValue();
     }
     return modifier;
+  }
+};
+
+Mixins.ExperienceGainer = {
+  name: 'ExperienceGainer',
+  doc: 'Tracks experience and allows for leveling up',
+  init: function (blueprint) {
+    this._level = blueprint.level || 1;
+    this._experience = blueprint.experience || 0;
+    this._statPointsPerLevel = blueprint.statPointsPerLevel || 1;
+    this._statPoints = 0;
+    // Determine what stats can be levelled up.
+    // TODO: make determining stats this more generic..maybe by having a series of skills mixins
+    this._statOptions = [];
+    if (this.hasMixin('Attacker')) {
+      this._statOptions.push(['Increase attack value', this.increaseAttackValue]);
+    }
+    if (this.hasMixin('Destructible')) {
+      this._statOptions.push(['Increase defense value', this.increaseDefenseValue]);
+      this._statOptions.push(['Increase max health', this.increaseMaxHp]);
+    }
+    if (this.hasMixin('Sight')) {
+      this._statOptions.push(['Increase sight range', this.increaseSightRadius]);
+    }
+  },
+  getLevel: function () {
+    return this._level;
+  },
+  getExperience: function () {
+    return this._experience;
+  },
+  getNextLevelExperience: function () {
+    return (this._level * this._level) * 10;
+  },
+  getStatPoints: function () {
+    return this._statPoints;
+  },
+  setStatPoints: function (statPoints) {
+    this._statPoints = statPoints;
+  },
+  getStatOptions: function () {
+    return this._statOptions;
+  },
+  giveExperience: function (points) {
+    var statPointsGained = 0;
+    var levelsGained = 0;
+    // Loop until we've allocated all points.
+    while (points > 0) {
+      // Check if adding in the points will surpass the level threshold.
+      if (this._experience + points >= this.getNextLevelExperience()) {
+        // Fill our experience till the next threshold.
+        var usedPoints = this.getNextLevelExperience() - this._experience;
+        points -= usedPoints;
+        this._experience += usedPoints;
+        // Level up our entity!
+        this._level++;
+        levelsGained++;
+        this._statPoints += this._statPointsPerLevel;
+        statPointsGained += this._statPointsPerLevel;
+      } else {
+        // Simple case - just give the experience.
+        this._experience += points;
+        points = 0;
+      }
+    }
+    // Check if we gained at least one level.
+    if (levelsGained > 0) {
+      Game.sendMessage(this, "You advance to level %d.", [this._level]);
+      // Heal the entity if possible.
+      if (this.hasMixin('Destructible')) {
+        this.setHp(this.getMaxHp());
+      }
+      if (this.hasMixin('StatGainer')) {
+        this.onGainLevel();
+      }
+    }
+  }
+};
+
+Mixins.RandomStatGainer = {
+  name: 'RandomStatGainer',
+  type: 'StatGainer',
+  doc: 'Will increase a random stat on level up',
+  onGainLevel: function () {
+    var statOptions = this.getStatOptions();
+    // Randomly select a stat option and execute the callback for each
+    // stat point.
+    while (this.getStatPoints() > 0) {
+      // Call the stat increasing function with this as the context.
+      statOptions.random()[1].call(this);
+      this.setStatPoints(this.getStatPoints() - 1);
+    }
+  }
+};
+
+Mixins.PlayerStatGainer = {
+  name: 'PlayerStatGainer',
+  type: 'StatGainer',
+  doc: 'Will ask the player which stat to increase on level up',
+  onGainLevel: function () {
+    // Setup the gain stat screen and show it.
+    var statScreen = Singletons.ScreenCatalog.getScreen('GainStatsScreen');
+    statScreen.setup(this);
+    Singletons.ScreenCatalog.getScreen('PlayScreen').setSubScreen(statScreen);
   }
 };
 

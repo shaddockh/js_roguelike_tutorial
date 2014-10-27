@@ -2,8 +2,8 @@ var Game = require('../game');
 var ROT = require('rot');
 var gameconfig = require('../gameconfig');
 var Singletons = require('../singletons');
-
-var startScreen = require('./basescreen')('Start');
+var Screen = require('./basescreen');
+var startScreen = new Screen('Start');
 
 //  enter: function () {
 //    console.log("Entered start screen.");

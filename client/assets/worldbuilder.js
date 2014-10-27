@@ -26,12 +26,12 @@ module.exports.build2DArray = build2DArray;
  */
 var LevelBuilder = (function () {
 
-  function buildLevel(levelBlueprint, levelId) {
+  function buildLevel(levelBlueprint, blueprintOverrides) {
 
-    var levelBuilder = new Entity(levelBlueprint);
-    if (levelId) {
-      levelBuilder.setLevelId(levelId);
-    }
+    var levelBuilder = new Entity(levelBlueprint, blueprintOverrides);
+
+    console.log('Building Level: ' + levelBuilder.getLevelId());
+    console.log('Difficulty: ' + levelBuilder.getLevelDifficulty());
 
     if (levelBuilder.hasMixin('TerrainBuilder')) {
       levelBuilder.buildTerrain();
@@ -48,6 +48,8 @@ var LevelBuilder = (function () {
     if (levelBuilder.hasMixin('ItemBuilder')) {
       levelBuilder.buildItems();
     }
+
+    levelBuilder.dumpStatistics();
 
     //TODO: should this return the level that was built or the levelbuilder?
     return levelBuilder;
@@ -147,9 +149,24 @@ var WorldBuilder = (function () {
     //TODO: make this blueprint configurable
 
     var levels = [
-      LevelBuilder.buildLevel('FungusLevelBuilder', 'fungus01'),
-      LevelBuilder.buildLevel('FungusLevelBuilder', 'fungus02'),
-      LevelBuilder.buildLevel('FungusLevelBuilder', 'fungus03')
+      LevelBuilder.buildLevel('FungusLevelBuilder', {
+        LevelBuilder: {
+          levelId: 'fungus01',
+          levelDifficulty: 1
+        }
+      }),
+      LevelBuilder.buildLevel('FungusLevelBuilder', {
+        LevelBuilder: {
+          levelId: 'fungus02',
+          levelDifficulty: 2
+        }
+      }),
+      LevelBuilder.buildLevel('FungusLevelBuilder', {
+        LevelBuilder: {
+          levelId: 'fungus03',
+          levelDifficulty: 3
+        }
+      })
     ];
 
     connectLevels(levels[0], levels[1]);

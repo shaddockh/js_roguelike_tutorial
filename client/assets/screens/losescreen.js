@@ -1,4 +1,5 @@
-var loseScreen = require('./basescreen')('Lose');
+var Screen = require('./basescreen');
+var loseScreen = new Screen('Lose');
 
 // Define our winning screen
 loseScreen.render = function (display) {

@@ -1,8 +1,9 @@
 var Game = require('../game');
 var ROT = require('rot');
 var Singletons = require('../singletons');
+var Screen = require('./basescreen');
 
-var playScreen = require('./basescreen')('Play');
+var playScreen = new Screen('Play');
 
 var world = null,
   centerX = 0,
@@ -10,6 +11,8 @@ var world = null,
   player = null;
 
 var Entity = require('../entity');
+
+//TODO: handle 'this' on the PlayScreen since it's now a proper object
 
 // Define our playing screen
 playScreen.enter = function () {
@@ -76,9 +79,12 @@ playScreen.render = function (display) {
   });
 
   //TODO: Ask player to update UI with appropriate stuff
-  // Render player HP
+
+  // Render player stats
   var stats = '%c{white}%b{black}';
-  stats += vsprintf('HP: %d/%d ', [player.getHp(), player.getMaxHp()]);
+  stats += vsprintf('HP: %d/%d L: %d XP: %d', [player.getHp(), player.getMaxHp(),
+    player.getLevel(), player.getExperience()
+  ]);
   display.drawText(0, screenHeight, stats);
 
   // Render hunger state

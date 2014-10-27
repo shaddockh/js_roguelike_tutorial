@@ -1,16 +1,16 @@
 var Screen = function (name) {
-  var impl = {
-    enter: function () {
-      console.log("Entered " + name + " screen.");
-    },
-    exit: function () {
-      console.log("Exited" + name + " screen.");
-    },
-    render: function (display) {},
-    handleInput: function (inputType, inputData) {}
-  };
-
-  return impl;
+  this._screenName = name;
 };
-// Define our winning screen
+
+Screen.prototype.enter = function () {
+  console.log("Entered " + name + " screen.");
+};
+
+Screen.prototype.exit = function () {
+  console.log("Exited" + name + " screen.");
+};
+Screen.prototype.render = function (display) {};
+
+Screen.prototype.handleInput = function (inputType, inputData) {};
+
 module.exports = Screen;

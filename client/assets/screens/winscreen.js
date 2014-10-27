@@ -1,6 +1,7 @@
 var ROT = require('rot');
 
-var winScreen = require('./basescreen')("Win");
+var Screen = require('./basescreen');
+var winScreen = new Screen('Win');
 
 // Define our winning screen
 //  enter: function () {

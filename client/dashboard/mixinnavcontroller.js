@@ -34,13 +34,11 @@ MixinNavigator.prototype.render = function ($container) {
       el = map.get(mixin.name);
       el.doc = mixin.doc;
     }
-    console.log(name + ':' + (mixin.type || '_base'));
     var parent, parentType, parentTypeEqualsName;
     parentType = mixin.type || '_base';
     if (parentType.toUpperCase() === mixin.name.toUpperCase()) {
       parentTypeEqualsName = true;
       parentType = '_base';
-      console.log(parentType + '==' + mixin.name);
     }
 
     if (!parentTypeEqualsName) {

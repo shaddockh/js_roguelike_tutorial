@@ -25,7 +25,9 @@ Blueprints.PlayerTemplate = {
     inventorySlots: 22
   },
   FoodConsumer: {},
-  EquipSlots: {}
+  EquipSlots: {},
+  ExperienceGainer: {},
+  PlayerStatGainer: {}
 };
 
 Blueprints.FungusTemplate = {
@@ -43,7 +45,9 @@ Blueprints.FungusTemplate = {
   Destructible: {
     maxHp: 10,
     destroySpawnTemplate: 'Bloodstain'
-  }
+  },
+  ExperienceGainer: {},
+  RandomStatGainer: {}
 };
 
 //////////////////////////////
@@ -59,7 +63,9 @@ Blueprints.WanderingActorTemplate = {
   Destructible: {
     destroySpawnTemplate: 'Bloodstain'
   },
-  CorpseDropper: {}
+  CorpseDropper: {},
+  ExperienceGainer: {},
+  RandomStatGainer: {}
 };
 
 Blueprints.BatTemplate = {
@@ -112,7 +118,9 @@ Blueprints.HunterActorTemplate = {
   CorpseDropper: {},
   Destructible: {
     destroySpawnTemplate: 'Bloodstain'
-  }
+  },
+  ExperienceGainer: {},
+  RandomStatGainer: {}
 };
 
 Blueprints.KoboldTemplate = {

@@ -2,7 +2,8 @@ var Blueprints = {};
 Blueprints.BaseLevelBuilder = {
   name: 'BaseLevelBuilder',
   inherits: '_base',
-  LevelBuilder: {}
+  LevelBuilder: {},
+  ReportStatistics: {}
 };
 
 Blueprints.FungusLevelBuilder = {

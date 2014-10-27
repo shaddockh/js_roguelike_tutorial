@@ -27,7 +27,6 @@ var RNG = (function () {
 
   api.randomArrayElement = function (array) {
     var el = array[api.randomIntInRange(0, array.length - 1)];
-    console.log('Finding random array element: ' + el);
     return el;
   };
 

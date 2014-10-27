@@ -16580,7 +16580,7 @@ if (module && module.exports) { module.exports.ROT = ROT;}
   });
 })();
 
-},{"./../bower_components/bootstrap/dist/js/bootstrap.js":1,"./../bower_components/jquery/dist/jquery.js":2,"./assets/game":11,"./dashboard/dashboardcontroller":40}],5:[function(require,module,exports){
+},{"./../bower_components/bootstrap/dist/js/bootstrap.js":1,"./../bower_components/jquery/dist/jquery.js":2,"./assets/game":11,"./dashboard/dashboardcontroller":41}],5:[function(require,module,exports){
 module.exports = [
   require('./builderBlueprints'),
   require('./tileBlueprints'),
@@ -16616,7 +16616,9 @@ Blueprints.PlayerTemplate = {
     inventorySlots: 22
   },
   FoodConsumer: {},
-  EquipSlots: {}
+  EquipSlots: {},
+  ExperienceGainer: {},
+  PlayerStatGainer: {}
 };
 
 Blueprints.FungusTemplate = {
@@ -16634,7 +16636,9 @@ Blueprints.FungusTemplate = {
   Destructible: {
     maxHp: 10,
     destroySpawnTemplate: 'Bloodstain'
-  }
+  },
+  ExperienceGainer: {},
+  RandomStatGainer: {}
 };
 
 //////////////////////////////
@@ -16650,7 +16654,9 @@ Blueprints.WanderingActorTemplate = {
   Destructible: {
     destroySpawnTemplate: 'Bloodstain'
   },
-  CorpseDropper: {}
+  CorpseDropper: {},
+  ExperienceGainer: {},
+  RandomStatGainer: {}
 };
 
 Blueprints.BatTemplate = {
@@ -16703,7 +16709,9 @@ Blueprints.HunterActorTemplate = {
   CorpseDropper: {},
   Destructible: {
     destroySpawnTemplate: 'Bloodstain'
-  }
+  },
+  ExperienceGainer: {},
+  RandomStatGainer: {}
 };
 
 Blueprints.KoboldTemplate = {
@@ -16732,7 +16740,8 @@ var Blueprints = {};
 Blueprints.BaseLevelBuilder = {
   name: 'BaseLevelBuilder',
   inherits: '_base',
-  LevelBuilder: {}
+  LevelBuilder: {},
+  ReportStatistics: {}
 };
 
 Blueprints.FungusLevelBuilder = {
@@ -17205,7 +17214,7 @@ Entity.prototype.hasMixin = function (obj) {
 
 module.exports = Entity;
 
-},{"./singletons":35,"entity-blueprint-manager":42}],11:[function(require,module,exports){
+},{"./singletons":36,"entity-blueprint-manager":43}],11:[function(require,module,exports){
 /*global $*/
 
 //NOTE: This is a singleton
@@ -17342,7 +17351,7 @@ Game.getNeighborPositions = function (x, y) {
 
 module.exports = Game;
 
-},{"./gameconfig":12,"./singletons":35,"rot":3,"sprintf-js":46}],12:[function(require,module,exports){
+},{"./gameconfig":12,"./singletons":36,"rot":3,"sprintf-js":47}],12:[function(require,module,exports){
 module.exports = {
   screenWidth: 80,
   screenHeight: 24
@@ -17659,7 +17668,7 @@ Level.prototype.isExplored = function (x, y) {
 
 module.exports = Level;
 
-},{"./singletons":35,"./worldbuilder":38,"rot":3}],14:[function(require,module,exports){
+},{"./singletons":36,"./worldbuilder":39,"rot":3}],14:[function(require,module,exports){
 module.exports = [
   require('./builderMixins'),
   require('./tileMixins'),
@@ -17918,7 +17927,7 @@ Mixins.AiTaskWander = {
 
 module.exports = Mixins;
 
-},{"../entity":10,"../game":11,"../singletons":35,"entity-blueprint-manager":42,"rot":3}],16:[function(require,module,exports){
+},{"../entity":10,"../game":11,"../singletons":36,"entity-blueprint-manager":43,"rot":3}],16:[function(require,module,exports){
 var Singletons = require('../singletons');
 var ROT = require('rot');
 var Level = require('../level');
@@ -17939,6 +17948,7 @@ Mixins.LevelBuilder = {
     this._width = blueprint.width || 0;
     this._height = blueprint.height || 0;
     this._levelId = blueprint.levelId || 'level';
+    this._levelDifficulty = blueprint.levelDifficulty || 1;
   },
   getWidth: function () {
     return this._width;
@@ -17957,6 +17967,9 @@ Mixins.LevelBuilder = {
   },
   setLevelId: function (levelId) {
     this._levelId = levelId;
+  },
+  getLevelDifficulty: function () {
+    return this._levelDifficulty;
   }
 
 };
@@ -18115,12 +18128,23 @@ Mixins.RandomPositionCreatureBuilder = {
   },
   buildCreatures: function () {
     var level = this.getLevel();
+    var difficulty = this.getLevelDifficulty();
     var count = Singletons.RNG.randomIntInRange(this._minCreatureCount, this._maxCreatureCount);
     if (this.hasMixin('debug')) {
       this.debug('Creature Builder: building ' + count + ' creatures.', 'RandomPositionCreatureBuilder');
     }
     for (var i = 0; i < count; i++) {
-      level.addEntityAtRandomPosition(new Entity(Singletons.RNG.randomArrayElement(this._creatureList)));
+      var creature = new Entity(Singletons.RNG.randomArrayElement(this._creatureList));
+      // Level up the entity based on the floor
+      if (creature.hasMixin('ExperienceGainer')) {
+        for (var creaturelevel = 1; creaturelevel < difficulty; creaturelevel++) {
+          creature.giveExperience(creature.getNextLevelExperience() - creature.getExperience());
+        }
+      }
+      level.addEntityAtRandomPosition(creature);
+      if (this.hasMixin('ReportStatistics')) {
+        this.incStatistic('Creatures', 'Level ' + creature.getLevel() + ' ' + creature.getName());
+      }
     }
   }
 };
@@ -18142,7 +18166,11 @@ Mixins.RandomPositionItemBuilder = {
       this.debug('Item Builder: building ' + count + ' items.', 'RandomPositionItemBuilder');
     }
     for (var i = 0; i < count; i++) {
-      level.addEntityAtRandomPosition(new Entity(Singletons.RNG.randomArrayElement(this._itemList)));
+      var item = new Entity(Singletons.RNG.randomArrayElement(this._itemList));
+      level.addEntityAtRandomPosition(item);
+      if (this.hasMixin('ReportStatistics')) {
+        this.incStatistic('Items', item.getName());
+      }
     }
   }
 };
@@ -18190,7 +18218,7 @@ Mixins.UniformTerrainBuilder = {
 
 module.exports = Mixins;
 
-},{"../entity":10,"../game":11,"../level":13,"../singletons":35,"../worldbuilder":38,"rot":3}],17:[function(require,module,exports){
+},{"../entity":10,"../game":11,"../level":13,"../singletons":36,"../worldbuilder":39,"rot":3}],17:[function(require,module,exports){
 var ItemMixins = {};
 
 // Edible mixins
@@ -18256,6 +18284,7 @@ module.exports = ItemMixins;
 var Singletons = require('./../singletons');
 var Game = require('./../game');
 var Entity = require('./../entity');
+var Dictionary = require('entity-blueprint-manager').Dictionary;
 
 var Mixins = {};
 
@@ -18267,7 +18296,52 @@ var BaseMixin = function (name, type) {
     init: function (blueprint) {}
   };
 };
+Mixins.ReportStatistics = {
+  name: 'ReportStatistics',
+  doc: 'captures statistics to dump to the console',
 
+  init: function (blueprint) {
+    this._statisticCategories = new Dictionary({
+      ignoreCase: true
+    });
+
+  },
+  incStatistic: function (category, stat, delta) {
+    if (!this._statisticCategories.containsKey(category)) {
+      this._statisticCategories.add(category, new Dictionary({
+        ignoreCase: true
+      }));
+    }
+    var cat = this._statisticCategories.get(category);
+    if (!cat.containsKey(stat)) {
+      cat.add(stat, {
+        count: 0
+      });
+    }
+    cat.get(stat).count++;
+  },
+  /**
+   * returns a Dictionary
+   * @param category
+   * @returns {*}
+   */
+  getCategoryStats: function(category) {
+    return this._statisticCategories.get(category);
+  },
+  getStats: function(category, statistic){
+    return this.getCategoryStats(category).get(statistic);
+  },
+  dumpStatistics: function () {
+    var cats = this._statisticCategories;
+    cats.forEach(function(cat, name){
+      console.log('Statistics for ' + name);
+      var out = [];
+      cat.forEach(function(stat,statName){
+        console.log(statName, stat);
+      });
+    });
+  }
+};
 Mixins.Debug = {
   name: 'Debug',
   obsolete: false,
@@ -18535,10 +18609,31 @@ Mixins.Destructible = {
 
       if (this.hasMixin('Life')) {
         this.kill();
+
+        if (attacker.hasMixin('ExperienceGainer')) {
+          var exp = this.calculateXp(attacker);
+          // Only give experience if more than 0.
+          if (exp > 0) {
+            attacker.giveExperience(exp);
+          }
+        }
       } else {
         this.getMap().removeEntity(this);
       }
+
     }
+  },
+  calculateXp: function (attacker) {
+    //TODO: move the XP calculation into either a separate mixin or some kind of formulas module
+    var exp = this.getMaxHp() + this.getDefenseValue();
+    if (this.hasMixin('Attacker')) {
+      exp += this.getAttackValue();
+    }
+    // Account for level differences
+    if (this.hasMixin('ExperienceGainer')) {
+      exp -= (attacker.getLevel() - this.getLevel()) * 3;
+    }
+    return exp;
   },
   getHp: function () {
     return this._hp;
@@ -18563,6 +18658,25 @@ Mixins.Destructible = {
   },
   setDefenseValue: function (value) {
     this._defenseValue = value;
+  },
+  increaseDefenseValue: function (value, quiet) {
+    // If no value was passed, default to 2.
+    value = value || 2;
+    // Add to the defense value.
+    this._defenseValue += value;
+    if (!quiet) {
+      Game.sendMessage(this, "You look tougher!");
+    }
+  },
+  increaseMaxHp: function (value, quiet) {
+    // If no value was passed, default to 10.
+    value = value || 10;
+    // Add to both max HP and HP.
+    this._maxHp += value;
+    this._hp += value;
+    if (!quiet) {
+      Game.sendMessage(this, "You look healthier!");
+    }
   }
 };
 
@@ -18584,6 +18698,15 @@ Mixins.Attacker = {
   },
   setAttackValue: function (value) {
     this._attackValue = value;
+  },
+  increaseAttackValue: function (value, quiet) {
+    // If no value was passed, default to 2.
+    value = value || 2;
+    // Add to the attack value.
+    this._attackValue += value;
+    if (!quiet) {
+      Game.sendMessage(this, "You look stronger!");
+    }
   },
   canAttack: function (target) {
 
@@ -18637,6 +18760,15 @@ Mixins.Sight = {
   },
   getSightRadius: function () {
     return this._sightRadius;
+  },
+  increaseSightRadius: function (value, quiet) {
+    // If no value was passed, default to 1.
+    value = value || 1;
+    // Add to sight radius.
+    this._sightRadius += value;
+    if (!quiet) {
+      Game.sendMessage(this, "You are more aware of your surroundings!");
+    }
   },
   canSee: function (entity) {
     // If not on the same map or on different floors, then exit early
@@ -18915,9 +19047,113 @@ Mixins.EquipSlots = {
   }
 };
 
+Mixins.ExperienceGainer = {
+  name: 'ExperienceGainer',
+  doc: 'Tracks experience and allows for leveling up',
+  init: function (blueprint) {
+    this._level = blueprint.level || 1;
+    this._experience = blueprint.experience || 0;
+    this._statPointsPerLevel = blueprint.statPointsPerLevel || 1;
+    this._statPoints = 0;
+    // Determine what stats can be levelled up.
+    // TODO: make determining stats this more generic..maybe by having a series of skills mixins
+    this._statOptions = [];
+    if (this.hasMixin('Attacker')) {
+      this._statOptions.push(['Increase attack value', this.increaseAttackValue]);
+    }
+    if (this.hasMixin('Destructible')) {
+      this._statOptions.push(['Increase defense value', this.increaseDefenseValue]);
+      this._statOptions.push(['Increase max health', this.increaseMaxHp]);
+    }
+    if (this.hasMixin('Sight')) {
+      this._statOptions.push(['Increase sight range', this.increaseSightRadius]);
+    }
+  },
+  getLevel: function () {
+    return this._level;
+  },
+  getExperience: function () {
+    return this._experience;
+  },
+  getNextLevelExperience: function () {
+    return (this._level * this._level) * 10;
+  },
+  getStatPoints: function () {
+    return this._statPoints;
+  },
+  setStatPoints: function (statPoints) {
+    this._statPoints = statPoints;
+  },
+  getStatOptions: function () {
+    return this._statOptions;
+  },
+  giveExperience: function (points) {
+    var statPointsGained = 0;
+    var levelsGained = 0;
+    // Loop until we've allocated all points.
+    while (points > 0) {
+      // Check if adding in the points will surpass the level threshold.
+      if (this._experience + points >= this.getNextLevelExperience()) {
+        // Fill our experience till the next threshold.
+        var usedPoints = this.getNextLevelExperience() - this._experience;
+        points -= usedPoints;
+        this._experience += usedPoints;
+        // Level up our entity!
+        this._level++;
+        levelsGained++;
+        this._statPoints += this._statPointsPerLevel;
+        statPointsGained += this._statPointsPerLevel;
+      } else {
+        // Simple case - just give the experience.
+        this._experience += points;
+        points = 0;
+      }
+    }
+    // Check if we gained at least one level.
+    if (levelsGained > 0) {
+      Game.sendMessage(this, "You advance to level %d.", [this._level]);
+      // Heal the entity if possible.
+      if (this.hasMixin('Destructible')) {
+        this.setHp(this.getMaxHp());
+      }
+      if (this.hasMixin('StatGainer')) {
+        this.onGainLevel();
+      }
+    }
+  }
+};
+
+Mixins.RandomStatGainer = {
+  name: 'RandomStatGainer',
+  type: 'StatGainer',
+  doc: 'Will increase a random stat on level up',
+  onGainLevel: function () {
+    var statOptions = this.getStatOptions();
+    // Randomly select a stat option and execute the callback for each
+    // stat point.
+    while (this.getStatPoints() > 0) {
+      // Call the stat increasing function with this as the context.
+      statOptions.random()[1].call(this);
+      this.setStatPoints(this.getStatPoints() - 1);
+    }
+  }
+};
+
+Mixins.PlayerStatGainer = {
+  name: 'PlayerStatGainer',
+  type: 'StatGainer',
+  doc: 'Will ask the player which stat to increase on level up',
+  onGainLevel: function () {
+    // Setup the gain stat screen and show it.
+    var statScreen = Singletons.ScreenCatalog.getScreen('GainStatsScreen');
+    statScreen.setup(this);
+    Singletons.ScreenCatalog.getScreen('PlayScreen').setSubScreen(statScreen);
+  }
+};
+
 module.exports = Mixins;
 
-},{"./../entity":10,"./../game":11,"./../singletons":35}],19:[function(require,module,exports){
+},{"./../entity":10,"./../game":11,"./../singletons":36,"entity-blueprint-manager":43}],19:[function(require,module,exports){
 var Mixins = {};
 Mixins.Tile = {
   name: 'Tile',
@@ -18975,7 +19211,6 @@ var RNG = (function () {
 
   api.randomArrayElement = function (array) {
     var el = array[api.randomIntInRange(0, array.length - 1)];
-    console.log('Finding random array element: ' + el);
     return el;
   };
 
@@ -19008,10 +19243,11 @@ var ScreenCatalog = (function () {
 
 module.exports = ScreenCatalog;
 
-},{"entity-blueprint-manager":42}],22:[function(require,module,exports){
+},{"entity-blueprint-manager":43}],22:[function(require,module,exports){
 module.exports = {
   'DropScreen': require('./dropscreen'),
   'EatScreen': require('./eatscreen'),
+  'GainStatsScreen': require('./gainstatscreen'),
   'InventoryScreen': require('./inventoryScreen'),
   'LoseScreen': require('./losescreen'),
   'PickupScreen': require('./pickupscreen'),
@@ -19022,22 +19258,22 @@ module.exports = {
   'WinScreen': require('./winscreen')
 };
 
-},{"./dropscreen":24,"./eatscreen":25,"./inventoryScreen":26,"./losescreen":28,"./pickupscreen":29,"./playscreen":30,"./startscreen":31,"./wearscreen":32,"./wieldscreen":33,"./winscreen":34}],23:[function(require,module,exports){
+},{"./dropscreen":24,"./eatscreen":25,"./gainstatscreen":26,"./inventoryScreen":27,"./losescreen":29,"./pickupscreen":30,"./playscreen":31,"./startscreen":32,"./wearscreen":33,"./wieldscreen":34,"./winscreen":35}],23:[function(require,module,exports){
 var Screen = function (name) {
-  var impl = {
-    enter: function () {
-      console.log("Entered " + name + " screen.");
-    },
-    exit: function () {
-      console.log("Exited" + name + " screen.");
-    },
-    render: function (display) {},
-    handleInput: function (inputType, inputData) {}
-  };
-
-  return impl;
+  this._screenName = name;
 };
-// Define our winning screen
+
+Screen.prototype.enter = function () {
+  console.log("Entered " + name + " screen.");
+};
+
+Screen.prototype.exit = function () {
+  console.log("Exited" + name + " screen.");
+};
+Screen.prototype.render = function (display) {};
+
+Screen.prototype.handleInput = function (inputType, inputData) {};
+
 module.exports = Screen;
 
 },{}],24:[function(require,module,exports){
@@ -19057,7 +19293,7 @@ var dropScreen = new ItemListScreen({
 
 module.exports = dropScreen;
 
-},{"./itemListScreen":27}],25:[function(require,module,exports){
+},{"./itemListScreen":28}],25:[function(require,module,exports){
 var ItemListScreen = require('./itemListScreen');
 var Game = require('../game');
 
@@ -19084,7 +19320,60 @@ var eatScreen = new ItemListScreen({
 
 module.exports = eatScreen;
 
-},{"../game":11,"./itemListScreen":27}],26:[function(require,module,exports){
+},{"../game":11,"./itemListScreen":28}],26:[function(require,module,exports){
+var Game = require('../game');
+var ROT = require('rot');
+var Singletons = require('../singletons');
+var Screen = require('./basescreen');
+
+var gainStatScreen = new Screen('Gain Stats');
+gainStatScreen.setup = function (entity) {
+  // Must be called before rendering.
+  this._entity = entity;
+  this._options = entity.getStatOptions();
+};
+
+gainStatScreen.render = function (display) {
+  var letters = 'abcdefghijklmnopqrstuvwxyz';
+  display.drawText(0, 0, 'Choose a stat to increase: ');
+
+  // Iterate through each of our options
+  for (var i = 0; i < this._options.length; i++) {
+    display.drawText(0, 2 + i,
+      letters.substring(i, i + 1) + ' - ' + this._options[i][0]);
+  }
+
+  // Render remaining stat points
+  display.drawText(0, 4 + this._options.length,
+    "Remaining points: " + this._entity.getStatPoints());
+};
+
+gainStatScreen.handleInput = function (inputType, inputData) {
+  if (inputType === 'keydown') {
+    // If a letter was pressed, check if it matches to a valid option.
+    if (inputData.keyCode >= ROT.VK_A && inputData.keyCode <= ROT.VK_Z) {
+      // Check if it maps to a valid item by subtracting 'a' from the character
+      // to know what letter of the alphabet we used.
+      var index = inputData.keyCode - ROT.VK_A;
+      if (this._options[index]) {
+        // Call the stat increasing function
+        this._options[index][1].call(this._entity);
+        // Decrease stat points
+        this._entity.setStatPoints(this._entity.getStatPoints() - 1);
+        // If we have no stat points left, exit the screen, else refresh
+        if (this._entity.getStatPoints() === 0) {
+          Singletons.ScreenCatalog.getScreen('PlayScreen').setSubScreen(undefined);
+        } else {
+          Game.refresh();
+        }
+      }
+    }
+  }
+};
+
+module.exports = gainStatScreen;
+
+},{"../game":11,"../singletons":36,"./basescreen":23,"rot":3}],27:[function(require,module,exports){
 var ItemListScreen = require('./itemListScreen');
 var inventoryScreen = new ItemListScreen({
   caption: 'Inventory',
@@ -19094,7 +19383,7 @@ var inventoryScreen = new ItemListScreen({
 
 module.exports = inventoryScreen;
 
-},{"./itemListScreen":27}],27:[function(require,module,exports){
+},{"./itemListScreen":28}],28:[function(require,module,exports){
 var ROT = require('rot');
 var Singletons = require('../singletons');
 
@@ -19233,8 +19522,9 @@ ItemListScreen.prototype.handleInput = function (inputType, inputData) {
 
 module.exports = ItemListScreen;
 
-},{"../game":11,"../singletons":35,"rot":3}],28:[function(require,module,exports){
-var loseScreen = require('./basescreen')('Lose');
+},{"../game":11,"../singletons":36,"rot":3}],29:[function(require,module,exports){
+var Screen = require('./basescreen');
+var loseScreen = new Screen('Lose');
 
 // Define our winning screen
 loseScreen.render = function (display) {
@@ -19246,7 +19536,7 @@ loseScreen.render = function (display) {
 
 module.exports = loseScreen;
 
-},{"./basescreen":23}],29:[function(require,module,exports){
+},{"./basescreen":23}],30:[function(require,module,exports){
 var ItemListScreen = require('./itemListScreen');
 
 var pickupScreen = new ItemListScreen({
@@ -19266,12 +19556,13 @@ var pickupScreen = new ItemListScreen({
 });
 module.exports = pickupScreen;
 
-},{"../game":11,"./itemListScreen":27}],30:[function(require,module,exports){
+},{"../game":11,"./itemListScreen":28}],31:[function(require,module,exports){
 var Game = require('../game');
 var ROT = require('rot');
 var Singletons = require('../singletons');
+var Screen = require('./basescreen');
 
-var playScreen = require('./basescreen')('Play');
+var playScreen = new Screen('Play');
 
 var world = null,
   centerX = 0,
@@ -19279,6 +19570,8 @@ var world = null,
   player = null;
 
 var Entity = require('../entity');
+
+//TODO: handle 'this' on the PlayScreen since it's now a proper object
 
 // Define our playing screen
 playScreen.enter = function () {
@@ -19345,9 +19638,12 @@ playScreen.render = function (display) {
   });
 
   //TODO: Ask player to update UI with appropriate stuff
-  // Render player HP
+
+  // Render player stats
   var stats = '%c{white}%b{black}';
-  stats += vsprintf('HP: %d/%d ', [player.getHp(), player.getMaxHp()]);
+  stats += vsprintf('HP: %d/%d L: %d XP: %d', [player.getHp(), player.getMaxHp(),
+    player.getLevel(), player.getExperience()
+  ]);
   display.drawText(0, screenHeight, stats);
 
   // Render hunger state
@@ -19537,13 +19833,13 @@ playScreen.endTurn = function () {
 
 module.exports = playScreen;
 
-},{"../entity":10,"../game":11,"../singletons":35,"../worldbuilder":38,"./basescreen":23,"rot":3,"sprintf-js":46}],31:[function(require,module,exports){
+},{"../entity":10,"../game":11,"../singletons":36,"../worldbuilder":39,"./basescreen":23,"rot":3,"sprintf-js":47}],32:[function(require,module,exports){
 var Game = require('../game');
 var ROT = require('rot');
 var gameconfig = require('../gameconfig');
 var Singletons = require('../singletons');
-
-var startScreen = require('./basescreen')('Start');
+var Screen = require('./basescreen');
+var startScreen = new Screen('Start');
 
 //  enter: function () {
 //    console.log("Entered start screen.");
@@ -19568,7 +19864,7 @@ startScreen.handleInput = function (inputType, inputData) {
 
 module.exports = startScreen;
 
-},{"../game":11,"../gameconfig":12,"../singletons":35,"./basescreen":23,"rot":3}],32:[function(require,module,exports){
+},{"../game":11,"../gameconfig":12,"../singletons":36,"./basescreen":23,"rot":3}],33:[function(require,module,exports){
 var ItemListScreen = require('./itemListScreen');
 
 var wearScreen = new ItemListScreen({
@@ -19601,7 +19897,7 @@ var wearScreen = new ItemListScreen({
 
 module.exports = wearScreen;
 
-},{"../game":11,"./itemListScreen":27}],33:[function(require,module,exports){
+},{"../game":11,"./itemListScreen":28}],34:[function(require,module,exports){
 var ItemListScreen = require('./itemListScreen');
 
 var wieldScreen = new ItemListScreen({
@@ -19633,10 +19929,11 @@ var wieldScreen = new ItemListScreen({
 
 module.exports = wieldScreen;
 
-},{"../game":11,"./itemListScreen":27}],34:[function(require,module,exports){
+},{"../game":11,"./itemListScreen":28}],35:[function(require,module,exports){
 var ROT = require('rot');
 
-var winScreen = require('./basescreen')("Win");
+var Screen = require('./basescreen');
+var winScreen = new Screen('Win');
 
 // Define our winning screen
 //  enter: function () {
@@ -19662,7 +19959,7 @@ winScreen.handleInput = function (inputType, inputData) {
 
 module.exports = winScreen;
 
-},{"./basescreen":23,"rot":3}],35:[function(require,module,exports){
+},{"./basescreen":23,"rot":3}],36:[function(require,module,exports){
 var entityBlueprintManager = require('entity-blueprint-manager');
 var MixinCatalog = new entityBlueprintManager.MixinCatalog();
 var BlueprintCatalog = new entityBlueprintManager.BlueprintCatalog();
@@ -19719,7 +20016,7 @@ module.exports.Player = null;
 module.exports.RNG = RNG;
 module.exports.initialize = initialize;
 
-},{"./blueprints/_blueprintIndex":5,"./entity":10,"./mixins/_mixinIndex":14,"./rng":20,"./screenCatalog":21,"./screens/_screenIndex":22,"./tileCatalog":36,"./world":37,"./worldbuilder":38,"entity-blueprint-manager":42}],36:[function(require,module,exports){
+},{"./blueprints/_blueprintIndex":5,"./entity":10,"./mixins/_mixinIndex":14,"./rng":20,"./screenCatalog":21,"./screens/_screenIndex":22,"./tileCatalog":37,"./world":38,"./worldbuilder":39,"entity-blueprint-manager":43}],37:[function(require,module,exports){
 var Dictionary = require('entity-blueprint-manager').Dictionary;
 
 var TileCatalog = (function () {
@@ -19731,7 +20028,7 @@ var TileCatalog = (function () {
 })();
 module.exports = TileCatalog;
 
-},{"entity-blueprint-manager":42}],37:[function(require,module,exports){
+},{"entity-blueprint-manager":43}],38:[function(require,module,exports){
 var World = function () {
   var ROT = require('rot');
   //TODO: these should be passed in
@@ -19780,7 +20077,7 @@ World.prototype.addLevel = function (level) {
 
 module.exports = World;
 
-},{"rot":3}],38:[function(require,module,exports){
+},{"rot":3}],39:[function(require,module,exports){
 var ROT = require('rot');
 var Level = require('./level');
 var Singletons = require('./singletons');
@@ -19809,12 +20106,12 @@ module.exports.build2DArray = build2DArray;
  */
 var LevelBuilder = (function () {
 
-  function buildLevel(levelBlueprint, levelId) {
+  function buildLevel(levelBlueprint, blueprintOverrides) {
 
-    var levelBuilder = new Entity(levelBlueprint);
-    if (levelId) {
-      levelBuilder.setLevelId(levelId);
-    }
+    var levelBuilder = new Entity(levelBlueprint, blueprintOverrides);
+
+    console.log('Building Level: ' + levelBuilder.getLevelId());
+    console.log('Difficulty: ' + levelBuilder.getLevelDifficulty());
 
     if (levelBuilder.hasMixin('TerrainBuilder')) {
       levelBuilder.buildTerrain();
@@ -19831,6 +20128,8 @@ var LevelBuilder = (function () {
     if (levelBuilder.hasMixin('ItemBuilder')) {
       levelBuilder.buildItems();
     }
+
+    levelBuilder.dumpStatistics();
 
     //TODO: should this return the level that was built or the levelbuilder?
     return levelBuilder;
@@ -19930,9 +20229,24 @@ var WorldBuilder = (function () {
     //TODO: make this blueprint configurable
 
     var levels = [
-      LevelBuilder.buildLevel('FungusLevelBuilder', 'fungus01'),
-      LevelBuilder.buildLevel('FungusLevelBuilder', 'fungus02'),
-      LevelBuilder.buildLevel('FungusLevelBuilder', 'fungus03')
+      LevelBuilder.buildLevel('FungusLevelBuilder', {
+        LevelBuilder: {
+          levelId: 'fungus01',
+          levelDifficulty: 1
+        }
+      }),
+      LevelBuilder.buildLevel('FungusLevelBuilder', {
+        LevelBuilder: {
+          levelId: 'fungus02',
+          levelDifficulty: 2
+        }
+      }),
+      LevelBuilder.buildLevel('FungusLevelBuilder', {
+        LevelBuilder: {
+          levelId: 'fungus03',
+          levelDifficulty: 3
+        }
+      })
     ];
 
     connectLevels(levels[0], levels[1]);
@@ -19961,7 +20275,7 @@ var WorldBuilder = (function () {
 
 module.exports.WorldBuilder = WorldBuilder;
 
-},{"./entity":10,"./game":11,"./level":13,"./singletons":35,"rot":3}],39:[function(require,module,exports){
+},{"./entity":10,"./game":11,"./level":13,"./singletons":36,"rot":3}],40:[function(require,module,exports){
 var $ = require("./../../bower_components/jquery/dist/jquery.js");
 var Dictionary = require('entity-blueprint-manager').Dictionary;
 
@@ -20032,7 +20346,7 @@ BlueprintNavigator.prototype.buildTree = function ($ul, element) {
 
 module.exports = BlueprintNavigator;
 
-},{"./../../bower_components/jquery/dist/jquery.js":2,"entity-blueprint-manager":42}],40:[function(require,module,exports){
+},{"./../../bower_components/jquery/dist/jquery.js":2,"entity-blueprint-manager":43}],41:[function(require,module,exports){
 var $ = require("./../../bower_components/jquery/dist/jquery.js");
 var bootstrap = require("./../../bower_components/bootstrap/dist/js/bootstrap.js");
 
@@ -20053,7 +20367,7 @@ DashboardController.init = function () {
 
 module.exports = DashboardController;
 
-},{"../assets/singletons":35,"./../../bower_components/bootstrap/dist/js/bootstrap.js":1,"./../../bower_components/jquery/dist/jquery.js":2,"./blueprintnavcontroller":39,"./mixinnavcontroller":41}],41:[function(require,module,exports){
+},{"../assets/singletons":36,"./../../bower_components/bootstrap/dist/js/bootstrap.js":1,"./../../bower_components/jquery/dist/jquery.js":2,"./blueprintnavcontroller":40,"./mixinnavcontroller":42}],42:[function(require,module,exports){
 var $ = require("./../../bower_components/jquery/dist/jquery.js");
 var Dictionary = require('entity-blueprint-manager').Dictionary;
 
@@ -20090,13 +20404,11 @@ MixinNavigator.prototype.render = function ($container) {
       el = map.get(mixin.name);
       el.doc = mixin.doc;
     }
-    console.log(name + ':' + (mixin.type || '_base'));
     var parent, parentType, parentTypeEqualsName;
     parentType = mixin.type || '_base';
     if (parentType.toUpperCase() === mixin.name.toUpperCase()) {
       parentTypeEqualsName = true;
       parentType = '_base';
-      console.log(parentType + '==' + mixin.name);
     }
 
     if (!parentTypeEqualsName) {
@@ -20140,11 +20452,11 @@ MixinNavigator.prototype.buildTree = function ($ul, element) {
 
 module.exports = MixinNavigator;
 
-},{"./../../bower_components/jquery/dist/jquery.js":2,"entity-blueprint-manager":42}],42:[function(require,module,exports){
+},{"./../../bower_components/jquery/dist/jquery.js":2,"entity-blueprint-manager":43}],43:[function(require,module,exports){
 module.exports.MixinCatalog = require('./lib/mixinCatalog');
 module.exports.BlueprintCatalog = require('./lib/blueprintCatalog');
 module.exports.Dictionary = require('./lib/dictionary');
-},{"./lib/blueprintCatalog":43,"./lib/dictionary":44,"./lib/mixinCatalog":45}],43:[function(require,module,exports){
+},{"./lib/blueprintCatalog":44,"./lib/dictionary":45,"./lib/mixinCatalog":46}],44:[function(require,module,exports){
 var Dictionary = require('./dictionary');
 /**
  * Generic blueprint manager (singleton).  What this will do is allow you
@@ -20461,7 +20773,7 @@ var BlueprintCatalog = function () {
 
 module.exports = BlueprintCatalog;
 
-},{"./dictionary":44}],44:[function(require,module,exports){
+},{"./dictionary":45}],45:[function(require,module,exports){
 /**
  *
  * Created by shaddockh on 9/28/14.
@@ -20563,6 +20875,17 @@ Dictionary.prototype.getAllKeys = function () {
 };
 
 /**
+ * iterates over the items in the catalog and executes callback for each element
+ * @param callback format: function(item, key)
+ */
+Dictionary.prototype.forEach = function(callback) {
+  var dict = this;
+  this._keys.forEach(function(key){
+    callback(dict.get(key), key);
+  });
+};
+
+/**
  * find an item by providing a filter that will be called for each item.
  * if limit is provided, it will stop iterating once the limit of found items is met.
  *
@@ -20591,7 +20914,7 @@ Dictionary.prototype.find = function (filt, limit) {
 
 module.exports = Dictionary;
 
-},{}],45:[function(require,module,exports){
+},{}],46:[function(require,module,exports){
 var Dictionary = require('./dictionary');
 
 /**
@@ -20679,7 +21002,7 @@ var MixinCatalog = function () {
 
 module.exports = MixinCatalog;
 
-},{"./dictionary":44}],46:[function(require,module,exports){
+},{"./dictionary":45}],47:[function(require,module,exports){
 /*! sprintf.js | Copyright (c) 2007-2013 Alexandru Marasteanu <hello at alexei dot ro> | 3 clause BSD license */
 
 (function(ctx) {

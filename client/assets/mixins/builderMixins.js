@@ -18,6 +18,7 @@ Mixins.LevelBuilder = {
     this._width = blueprint.width || 0;
     this._height = blueprint.height || 0;
     this._levelId = blueprint.levelId || 'level';
+    this._levelDifficulty = blueprint.levelDifficulty || 1;
   },
   getWidth: function () {
     return this._width;
@@ -36,6 +37,9 @@ Mixins.LevelBuilder = {
   },
   setLevelId: function (levelId) {
     this._levelId = levelId;
+  },
+  getLevelDifficulty: function () {
+    return this._levelDifficulty;
   }
 
 };
@@ -194,12 +198,23 @@ Mixins.RandomPositionCreatureBuilder = {
   },
   buildCreatures: function () {
     var level = this.getLevel();
+    var difficulty = this.getLevelDifficulty();
     var count = Singletons.RNG.randomIntInRange(this._minCreatureCount, this._maxCreatureCount);
     if (this.hasMixin('debug')) {
       this.debug('Creature Builder: building ' + count + ' creatures.', 'RandomPositionCreatureBuilder');
     }
     for (var i = 0; i < count; i++) {
-      level.addEntityAtRandomPosition(new Entity(Singletons.RNG.randomArrayElement(this._creatureList)));
+      var creature = new Entity(Singletons.RNG.randomArrayElement(this._creatureList));
+      // Level up the entity based on the floor
+      if (creature.hasMixin('ExperienceGainer')) {
+        for (var creaturelevel = 1; creaturelevel < difficulty; creaturelevel++) {
+          creature.giveExperience(creature.getNextLevelExperience() - creature.getExperience());
+        }
+      }
+      level.addEntityAtRandomPosition(creature);
+      if (this.hasMixin('ReportStatistics')) {
+        this.incStatistic('Creatures', 'Level ' + creature.getLevel() + ' ' + creature.getName());
+      }
     }
   }
 };
@@ -221,7 +236,11 @@ Mixins.RandomPositionItemBuilder = {
       this.debug('Item Builder: building ' + count + ' items.', 'RandomPositionItemBuilder');
     }
     for (var i = 0; i < count; i++) {
-      level.addEntityAtRandomPosition(new Entity(Singletons.RNG.randomArrayElement(this._itemList)));
+      var item = new Entity(Singletons.RNG.randomArrayElement(this._itemList));
+      level.addEntityAtRandomPosition(item);
+      if (this.hasMixin('ReportStatistics')) {
+        this.incStatistic('Items', item.getName());
+      }
     }
   }
 };
