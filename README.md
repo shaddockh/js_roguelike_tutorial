@@ -155,3 +155,7 @@ Tutorial 15
 * implemented Boss level with builder pattern
 * Added new system for making generic connectors for levels that can be parameterized
 * lots of WIP stuff going on, but you can win the game now by killing the zombie
+
+Tutorial 16
+====
+* From: http://www.codingcookies.com/2013/11/25/building-a-roguelike-in-javascript-part-16/

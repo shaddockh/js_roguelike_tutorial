@@ -147,9 +147,11 @@ Entity.prototype.raiseEvent = function (event) {
   var args = Array.prototype.slice.call(arguments, 1);
   var mixin = this;
   // Invoke each listener, with this entity as the context and the arguments
+  var results = [];
   this._listeners.get(event).forEach(function (callback) {
-    callback.apply(mixin, args);
+    results.push(callback.apply(mixin, args));
   });
+  return results;
 };
 
 module.exports = Entity;

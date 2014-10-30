@@ -15,6 +15,7 @@ startScreen.render = function (display) {
   // Render our prompt to the screen
   display.drawText(1, 1, "%c{yellow}Javascript Roguelike");
   display.drawText(1, 5, "Random Seed: " + Singletons.RNG.getSeed());
+  display.drawText(1, 10, "While playing, press [?] for help.");
   display.drawText(1, 22, "Press [Enter] to start!");
 };
 startScreen.handleInput = function (inputType, inputData) {

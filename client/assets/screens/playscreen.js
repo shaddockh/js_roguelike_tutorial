@@ -99,6 +99,9 @@ playScreen.setSubScreen = function (subscreen) {
     subscreen = Singletons.ScreenCatalog.getScreen(subscreen);
   }
 
+  if (subscreen && subscreen.setParentScreen) {
+    subscreen.setParentScreen('playScreen');
+  }
   playScreen.subScreen = subscreen;
   Game.refresh();
 };
@@ -185,6 +188,10 @@ playScreen.showItemsSubScreen = function (subScreen, items, emptyMessage) {
   }
 };
 
+playScreen.showHelpScreen = function () {
+  playScreen.setSubScreen('helpScreen');
+};
+
 playScreen.handleInput = function (inputType, inputData) {
   // If the game is over, enter will bring the user to the losing screen.
   if (playScreen.gameEnded) {
@@ -259,6 +266,9 @@ playScreen.handleInput = function (inputType, inputData) {
       playScreen.userActivate('>');
     } else if (keyChar === '<') {
       playScreen.userActivate('<');
+    } else if (keyChar === '?') {
+      playScreen.showHelpScreen();
+      return;
     } else {
       // Not a valid key
       return;
