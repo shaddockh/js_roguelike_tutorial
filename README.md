@@ -147,3 +147,11 @@ Tutorial 14
 ====
 * From: http://www.codingcookies.com/2013/09/14/building-a-roguelike-in-javascript-part-14/
 * Started adding stats to be logged from the world building routines
+
+Tutorial 15
+====
+* From: http://www.codingcookies.com/2013/09/21/building-a-roguelike-in-javascript-part-15/
+* implemented zombie with new dynamic TaskActor system
+* implemented Boss level with builder pattern
+* Added new system for making generic connectors for levels that can be parameterized
+* lots of WIP stuff going on, but you can win the game now by killing the zombie

@@ -92,13 +92,27 @@ Blueprints.Gizmo = {
   activateable: {}
 };
 
-Blueprints.StairsPortal = {
+Blueprints.Portal = {
   inherits: 'Gizmo',
-  name: 'StairsPortal',
+  name: 'Portal',
   portal: {
     targetLevel: null,
     targetX: null,
     targetY: null
+  }
+};
+Blueprints.StairsPortal = {
+  inherits: 'Portal',
+  name: 'StairsPortal'
+};
+
+Blueprints.Hole = {
+  inherits: 'Portal',
+  name: 'Hole',
+  Aspect: {
+    character: 'O',
+    foreground: 'white',
+    screenName: 'hole'
   }
 };
 

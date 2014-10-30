@@ -4,11 +4,31 @@ var Dictionary = require('entity-blueprint-manager').Dictionary;
 function MixinNavigator(mixinCatalog) {
   this.mixinCatalog = mixinCatalog;
 }
+MixinNavigator.prototype.buildNode = function (mixin) {
+
+  var result = {
+    name: mixin.name,
+    doc: mixin.doc,
+    listeners: null,
+    children: []
+  };
+
+  if (mixin.listeners) {
+    var l = [];
+    for (var key in mixin.listeners) {
+      l.push(key);
+    }
+    result.listeners = l.join(',');
+  }
+
+  return result;
+};
 
 MixinNavigator.prototype.render = function ($container) {
   var mixinCatalog = this.mixinCatalog;
   var ul = $('<ul></ul>');
   $container.append(ul);
+  var that = this;
 
   var map = new Dictionary({
     ignoreCase: true
@@ -24,11 +44,7 @@ MixinNavigator.prototype.render = function ($container) {
 
     var el;
     if (!map.containsKey(mixin.name)) {
-      el = {
-        name: mixin.name,
-        doc: mixin.doc,
-        children: []
-      };
+      el = that.buildNode(mixin);
       map.add(mixin.name, el);
     } else {
       el = map.get(mixin.name);
@@ -63,7 +79,7 @@ MixinNavigator.prototype.render = function ($container) {
 
 };
 MixinNavigator.prototype.buildTree = function ($ul, element) {
-  var li = $('<li></li>').text(element.name + ' - ' + (element.doc || 'Undocumented'));
+  var li = $('<li></li>').text(element.name + ' - ' + (element.doc || 'Undocumented') + '-' + element.listeners);
   $ul.append(li);
   if (element.children.length) {
     element.children.sort(function (a, b) {

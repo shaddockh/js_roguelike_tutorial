@@ -245,4 +245,51 @@ Mixins.AiTaskWander = {
   }
 };
 
+Mixins.AiTaskSpawnSlime = {
+  name: 'AiTaskSpawnSlime',
+  type: 'AiTask',
+  doc: 'Spawns a slime',
+  init: function (blueprint, mixin) {
+    this.registerAiTask(mixin.name, 'spawnSlime', 'canSpawnSlime');
+  },
+  canSpawnSlime: function () {
+    return Math.round(Math.random() * 100) <= 10;
+  },
+  spawnSlime: function () {
+    // Generate a random position nearby.
+    var xOffset = Math.floor(Math.random() * 3) - 1,
+      yOffset = Math.floor(Math.random() * 3) - 1,
+      x = this.getX() + xOffset,
+      y = this.getY() + yOffset;
+
+    // Check if we can spawn an entity at that position.
+    //TODO: should we look for an empty space? or just fail if the first try doesn't work?
+    if (!this.getMap().isEmptyFloor(x, y)) {
+      // If we cant, do nothing
+      return;
+    }
+    // Create the entity
+    var slime = new Entity('slime');
+    this.getMap().addEntityAtPosition(slime, x, y);
+  }
+};
+
+Mixins.AiTaskGrowArm = {
+  name: 'AiTaskGrowArm',
+  type: 'AiTask',
+  doc: 'Grows an arm',
+  init: function (blueprint, mixin) {
+    this.registerAiTask(mixin.name, 'growArm', 'canGrowArm');
+  },
+  canGrowArm: function () {
+    return this.getHp() <= 20 && !this._hasGrownArm;
+  },
+  growArm: function () {
+    this._hasGrownArm = true;
+    this.increaseAttackValue(5);
+    // Send a message saying the zombie grew an arm.
+    Game.sendMessageNearby(this.getMap(), this.getX(), this.getY(), 'An extra arm appears on the ' + this.getScreenName());
+  }
+};
+
 module.exports = Mixins;

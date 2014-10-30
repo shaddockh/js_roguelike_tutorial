@@ -35,6 +35,23 @@ Blueprints.FungusLevelBuilder = {
   }
 };
 
+Blueprints.ZombieBossLevel01 = {
+  name: 'ZombieBossLevel01',
+  inherits: 'BaseLevelBuilder',
+  LevelBuilder: {
+    width: 80,
+    height: 24,
+    levelId: 'ZombieBossLevel01'
+  },
+  BossLevelTerrainBuilder: {},
+  FovBuilder: {},
+  RandomPositionCreatureBuilder: {
+    minCreatureCount: 1,
+    maxCreatureCount: 1,
+    creatureList: ['GiantZombie']
+  }
+};
+
 /* need to figure out a way to have a map builder assemble multiple levels together */
 /*
 Blueprints.MapBuilder = {

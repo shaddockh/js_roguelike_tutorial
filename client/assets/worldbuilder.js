@@ -1,8 +1,10 @@
+/*jshint bitwise: false*/
 var ROT = require('rot');
 var Level = require('./level');
 var Singletons = require('./singletons');
 var Game = require('./game');
 var Entity = require('./entity');
+var Dictionary = require('entity-blueprint-manager').Dictionary;
 
 function build2DArray(width, height, defaultValue) {
 
@@ -21,14 +23,56 @@ function build2DArray(width, height, defaultValue) {
 
 module.exports.build2DArray = build2DArray;
 
+function fillCircle(tiles, centerX, centerY, radius, tile) {
+  // Copied from the DrawFilledCircle algorithm
+  // http://stackoverflow.com/questions/1201200/fast-algorithm-for-drawing-filled-circles
+  var x = radius;
+  var y = 0;
+  var xChange = 1 - (radius << 1);
+  var yChange = 0;
+  var radiusError = 0;
+
+  while (x >= y) {
+    for (var i = centerX - x; i <= centerX + x; i++) {
+      tiles[i][centerY + y] = tile;
+      tiles[i][centerY - y] = tile;
+    }
+    for (var j = centerX - y; j <= centerX + y; j++) {
+      tiles[j][centerY + x] = tile;
+      tiles[j][centerY - x] = tile;
+    }
+
+    y++;
+    radiusError += yChange;
+    yChange += 2;
+    if (((radiusError << 1) + xChange) > 0) {
+      x--;
+      radiusError += xChange;
+      xChange += 2;
+    }
+  }
+}
+module.exports.fillCircle = fillCircle;
+
 /**
  * Builder for individual levels.  Build returns the levelbuilder
  */
 var LevelBuilder = (function () {
 
-  function buildLevel(levelBlueprint, blueprintOverrides) {
+  /**
+   * Pass in either the name of the level blueprint to build or an object.  If object, make sure the 'inherits' property is filled
+   * @param levelBlueprint
+   * @returns {*}
+   */
+  function buildLevel(levelBlueprint) {
 
-    var levelBuilder = new Entity(levelBlueprint, blueprintOverrides);
+    //TODO: don't like the interface to this.
+    var levelBuilder;
+    if (typeof (levelBlueprint) === 'string') {
+      levelBuilder = new Entity(levelBlueprint);
+    } else {
+      levelBuilder = new Entity(levelBlueprint.inherits, levelBlueprint);
+    }
 
     console.log('Building Level: ' + levelBuilder.getLevelId());
     console.log('Difficulty: ' + levelBuilder.getLevelDifficulty());
@@ -61,8 +105,25 @@ var LevelBuilder = (function () {
 
 }());
 module.exports.LevelBuilder = LevelBuilder;
+var caveToBossRegionConnection = (function () {
+  // Add a hole to the final cavern on the last level.
+  function connect(connectionDefinition, fromLevelBuilder, toLevelBuilder) {
+    var fromLevel = fromLevelBuilder.getLevel(),
+      toLevel = toLevelBuilder.getLevel();
 
-var WorldBuilder = (function () {
+    var point = fromLevel.getRandomFloorPosition();
+    //fromLevel.setTile(point.x, point.y, Singletons.TileCatalog.get('hole'));
+
+    var destPoint = toLevel.getRandomFloorPosition();
+    var entity = new Entity('hole');
+    entity.setPortalTarget(toLevel.getLevelId(), destPoint.x, destPoint.y);
+    fromLevel.addEntityAtPosition(entity, point.x, point.y);
+  }
+  return {
+    connect: connect
+  };
+})();
+var caveToCaveRegionConnector = (function () {
 
   // This fetches a list of points that overlap between one
   // region at a given depth level and a region at a level beneath it.
@@ -144,47 +205,88 @@ var WorldBuilder = (function () {
     }
   };
 
-  function buildWorld(worldBlueprint) {
+  function connect(connectionDefinition, fromLevelBuilder, toLevelBuilder) {
+    connectLevels(fromLevelBuilder, toLevelBuilder);
+  }
+  return {
+    connect: connect
+  };
+})();
 
-    //TODO: make this blueprint configurable
+var WorldBuilder = (function () {
 
-    var levels = [
-      LevelBuilder.buildLevel('FungusLevelBuilder', {
+  var fungusWorld = {
+    levels: [{
+        inherits: 'FungusLevelBuilder',
         LevelBuilder: {
           levelId: 'fungus01',
           levelDifficulty: 1
         }
-      }),
-      LevelBuilder.buildLevel('FungusLevelBuilder', {
+      }, {
+        inherits: 'FungusLevelBuilder',
         LevelBuilder: {
           levelId: 'fungus02',
           levelDifficulty: 2
         }
-      }),
-      LevelBuilder.buildLevel('FungusLevelBuilder', {
+      }, {
+        inherits: 'FungusLevelBuilder',
         LevelBuilder: {
           levelId: 'fungus03',
           levelDifficulty: 3
         }
-      })
-    ];
+      },
+      'zombieBossLevel01'
+    ],
+    connections: [{
+      strategy: 'CaveToCaveRegionConnector',
+      from: 'fungus01',
+      to: 'fungus02',
+      biDirectional: true,
+      leftPortal: 'stairsDown',
+      rightPortal: 'stairsUp'
+    }, {
+      strategy: 'CaveToCaveRegionConnector',
+      from: 'fungus02',
+      to: 'fungus03',
+      biDirectional: true,
+      leftPortal: 'stairsDown',
+      rightPortal: 'stairsUp'
+    }, {
+      strategy: 'CaveToBossRegionConnection',
+      from: 'fungus03',
+      to: 'zombieBossLevel01',
+      biDirectional: false,
+      leftPortal: 'hole'
+    }],
+    entryPoint: 'fungus01'
+  };
 
-    connectLevels(levels[0], levels[1]);
-    connectLevels(levels[1], levels[2]);
+  var connectionStrategies = new Dictionary({
+    ignoreCase: true
+  });
+  connectionStrategies.add('CaveToCaveRegionConnector', caveToCaveRegionConnector);
+  connectionStrategies.add('caveToBossRegionConnection', caveToBossRegionConnection);
 
-    Singletons.World.addLevel(levels[0].getLevel());
-    Singletons.World.addLevel(levels[1].getLevel());
-    Singletons.World.addLevel(levels[2].getLevel());
+  function buildWorld(worldBlueprint) {
+    worldBlueprint = fungusWorld;
 
-    Singletons.World.setActiveLevel(levels[0].getLevel().getLevelId());
+    //TODO: make this blueprint configurable
+    var levels = new Dictionary({
+      ignoreCase: true
+    });
+    worldBlueprint.levels.forEach(function (levelDefinition) {
+      var levelBuilder = LevelBuilder.buildLevel(levelDefinition);
+      levels.add(levelBuilder.getLevelId(), levelBuilder);
+      Singletons.World.addLevel(levelBuilder.getLevel());
+    });
 
+    worldBlueprint.connections.forEach(function (connectionDefinition) {
+      connectionStrategies.get(connectionDefinition.strategy)
+        .connect(connectionDefinition, levels.get(connectionDefinition.from), levels.get(connectionDefinition.to));
+    });
+
+    Singletons.World.setActiveLevel(worldBlueprint.entryPoint);
     return Singletons.World;
-
-    //return {
-    //  getEntryLevel: function () {
-    //    return levels[0].getLevel();
-    //  }
-    //};
   }
 
   return {

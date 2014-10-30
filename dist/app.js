@@ -16641,16 +16641,23 @@ Blueprints.FungusTemplate = {
   RandomStatGainer: {}
 };
 
+Blueprints.TaskActor = {
+  inherits: 'Actor',
+  name: 'TaskActor',
+  TaskActor: {
+    aiTasks: ['aiTaskWander']
+  }
+};
+
 //////////////////////////////
 // WANDERERS
 /////////////////////////////
 Blueprints.WanderingActorTemplate = {
-  inherits: 'Actor',
+  inherits: 'TaskActor',
   name: 'WanderingActorTemplate',
   TaskActor: {
     aiTasks: ['aiTaskWander']
   },
-  //WanderingActor: {},
   Destructible: {
     destroySpawnTemplate: 'Bloodstain'
   },
@@ -16698,7 +16705,7 @@ Blueprints.NewtTemplate = {
 // HUNTERS
 /////////////////////////////
 Blueprints.HunterActorTemplate = {
-  inherits: 'Actor',
+  inherits: 'TaskActor',
   name: 'HunterActorTemplate',
   Sight: {
     sightRadius: 5
@@ -16730,6 +16737,50 @@ Blueprints.KoboldTemplate = {
   },
   Sight: {
     sightRadius: 5
+  }
+};
+
+Blueprints.GiantZombie = {
+  name: 'giantZombie',
+  inherits: 'HunterActorTemplate',
+  Aspect: {
+    character: 'Z',
+    screenName: 'giant zombie'
+  },
+  Destructible: {
+    maxHp: 30,
+    defenseValue: 5
+  },
+  Attacker: {
+    attackValue: 8
+  },
+  Sight: {
+    sightRadius: 6
+  },
+  ExperienceGainer: {
+    level: 5
+  },
+  TaskActor: {
+    aiTasks: ['AiTaskWander', 'AiTaskHunt', 'AiTaskSpawnSlime', 'AiTaskGrowArm']
+  },
+  WinOnDeath: {}
+};
+
+Blueprints.slime = {
+  name: 'slime',
+  inherits: 'HunterActorTemplate',
+  Aspect: {
+    character: 's',
+    foreground: 'lightGreen'
+  },
+  Destructible: {
+    maxHp: 10
+  },
+  Attacker: {
+    attackValue: 5
+  },
+  Sight: {
+    sightRadius: 3
   }
 };
 
@@ -16770,6 +16821,23 @@ Blueprints.FungusLevelBuilder = {
     itemList: [
       'apple', 'rock', 'melon', 'dagger', 'sword', 'staff', 'tunic', 'chainmail', 'platemail'
     ]
+  }
+};
+
+Blueprints.ZombieBossLevel01 = {
+  name: 'ZombieBossLevel01',
+  inherits: 'BaseLevelBuilder',
+  LevelBuilder: {
+    width: 80,
+    height: 24,
+    levelId: 'ZombieBossLevel01'
+  },
+  BossLevelTerrainBuilder: {},
+  FovBuilder: {},
+  RandomPositionCreatureBuilder: {
+    minCreatureCount: 1,
+    maxCreatureCount: 1,
+    creatureList: ['GiantZombie']
   }
 };
 
@@ -16905,13 +16973,27 @@ Blueprints.Gizmo = {
   activateable: {}
 };
 
-Blueprints.StairsPortal = {
+Blueprints.Portal = {
   inherits: 'Gizmo',
-  name: 'StairsPortal',
+  name: 'Portal',
   portal: {
     targetLevel: null,
     targetX: null,
     targetY: null
+  }
+};
+Blueprints.StairsPortal = {
+  inherits: 'Portal',
+  name: 'StairsPortal'
+};
+
+Blueprints.Hole = {
+  inherits: 'Portal',
+  name: 'Hole',
+  Aspect: {
+    character: 'O',
+    foreground: 'white',
+    screenName: 'hole'
   }
 };
 
@@ -17105,13 +17187,52 @@ var Tiles = {
   }
 };
 
+Tiles.holeTile = {
+  inherits: 'walkableTile',
+  aspect: {
+    character: 'O',
+    foreground: 'white',
+    screenName: 'hole'
+  }
+};
+
+Tiles.waterTile = {
+  inherits: 'tile',
+  aspect: {
+    character: '~',
+    foreground: 'blue',
+    obscuredForeground: 'darkblue'
+  },
+  tile: {
+    isWalkable: false,
+    blocksLight: false
+  }
+};
+
 module.exports = Tiles;
 
 },{}],10:[function(require,module,exports){
 var Singletons = require('./singletons');
 var Dictionary = require('entity-blueprint-manager').Dictionary;
 
+/**
+ *
+ * @param blueprint either name of blueprint or actual object blueprint
+ * @param blueprintOverrides object of overrides to override if blueprint param is name
+ * @constructor
+ */
 var Entity = function (blueprint, blueprintOverrides) {
+  // Create an object which will keep track what mixins we have
+  // attached to this entity based on the name property
+  this._attachedMixins = new Dictionary({
+    ignoreCase: true
+  });
+
+  //Create an object which will keep track of listeners
+  this._listeners = new Dictionary({
+    ignoreCase: true
+  });
+
   this._loadBlueprint(blueprint, blueprintOverrides);
 };
 
@@ -17120,9 +17241,16 @@ var noCopyList = {
   name: true,
   doc: true,
   type: true,
+  listeners: true,
   obsolete: true
 };
 
+/**
+ *
+ * @param blueprint name or object
+ * @param blueprintOverrides object to override if name provided in blueprint param
+ * @private
+ */
 Entity.prototype._loadBlueprint = function (blueprint, blueprintOverrides) {
   //if the blueprint is coming in as just a name, then we need to look it up in
   //the blueprint catalog to get the actual blueprint
@@ -17134,18 +17262,13 @@ Entity.prototype._loadBlueprint = function (blueprint, blueprintOverrides) {
   // Instantiate any properties from the passed object
   this._name = blueprint.name || '';
 
-  // Create an object which will keep track what mixins we have
-  // attached to this entity based on the name property
-  this._attachedMixins = new Dictionary({
-    ignoreCase: true
-  });
-
   for (var componentKey in blueprint) {
     if (typeof (blueprint[componentKey]) === 'object') {
       //we have a component reference, grab it from the library and instantiate a mixin instance
       this.attachMixin(componentKey, blueprint[componentKey]);
     }
   }
+  this.raiseEvent('onLoaded');
 };
 
 Entity.prototype.attachMixin = function (mixin, blueprint) {
@@ -17193,6 +17316,23 @@ Entity.prototype.attachMixin = function (mixin, blueprint) {
     this._attachedMixins.add(mixin.type);
   }
 
+  // Add all of our listeners
+  if (mixin.listeners) {
+    for (var listenerKey in mixin.listeners) {
+      // If we don't already have a key for this event in our listeners
+      // array, add it.
+      var listenerArray;
+      if (!this._listeners.containsKey(listenerKey)) {
+        listenerArray = [];
+        this._listeners.add(listenerKey, listenerArray);
+      } else {
+        listenerArray = this._listeners.get(listenerKey);
+      }
+      // Add the listener.
+      listenerArray.push(mixin.listeners[listenerKey]);
+    }
+  }
+
   // Finally call the init function if there is one
   if (mixin.init) {
     mixin.init.call(this, blueprint, mixin, Singletons.MixinCatalog);
@@ -17210,6 +17350,20 @@ Entity.prototype.hasMixin = function (obj) {
   } else {
     return this._attachedMixins.containsKey(obj);
   }
+};
+
+Entity.prototype.raiseEvent = function (event) {
+  // Make sure we have at least one listener, or else exit
+  if (!this._listeners.containsKey(event)) {
+    return;
+  }
+  // Extract any arguments passed, removing the event name
+  var args = Array.prototype.slice.call(arguments, 1);
+  var mixin = this;
+  // Invoke each listener, with this entity as the context and the arguments
+  this._listeners.get(event).forEach(function (callback) {
+    callback.apply(mixin, args);
+  });
 };
 
 module.exports = Entity;
@@ -17925,6 +18079,53 @@ Mixins.AiTaskWander = {
   }
 };
 
+Mixins.AiTaskSpawnSlime = {
+  name: 'AiTaskSpawnSlime',
+  type: 'AiTask',
+  doc: 'Spawns a slime',
+  init: function (blueprint, mixin) {
+    this.registerAiTask(mixin.name, 'spawnSlime', 'canSpawnSlime');
+  },
+  canSpawnSlime: function () {
+    return Math.round(Math.random() * 100) <= 10;
+  },
+  spawnSlime: function () {
+    // Generate a random position nearby.
+    var xOffset = Math.floor(Math.random() * 3) - 1,
+      yOffset = Math.floor(Math.random() * 3) - 1,
+      x = this.getX() + xOffset,
+      y = this.getY() + yOffset;
+
+    // Check if we can spawn an entity at that position.
+    //TODO: should we look for an empty space? or just fail if the first try doesn't work?
+    if (!this.getMap().isEmptyFloor(x, y)) {
+      // If we cant, do nothing
+      return;
+    }
+    // Create the entity
+    var slime = new Entity('slime');
+    this.getMap().addEntityAtPosition(slime, x, y);
+  }
+};
+
+Mixins.AiTaskGrowArm = {
+  name: 'AiTaskGrowArm',
+  type: 'AiTask',
+  doc: 'Grows an arm',
+  init: function (blueprint, mixin) {
+    this.registerAiTask(mixin.name, 'growArm', 'canGrowArm');
+  },
+  canGrowArm: function () {
+    return this.getHp() <= 20 && !this._hasGrownArm;
+  },
+  growArm: function () {
+    this._hasGrownArm = true;
+    this.increaseAttackValue(5);
+    // Send a message saying the zombie grew an arm.
+    Game.sendMessageNearby(this.getMap(), this.getX(), this.getY(), 'An extra arm appears on the ' + this.getScreenName());
+  }
+};
+
 module.exports = Mixins;
 
 },{"../entity":10,"../game":11,"../singletons":36,"entity-blueprint-manager":43,"rot":3}],16:[function(require,module,exports){
@@ -18117,6 +18318,43 @@ Mixins.CellularAutomataTerrainBuilder = {
   }
 };
 
+Mixins.BossLevelTerrainBuilder = {
+  name: 'BossLevelTerrainBuilder',
+  type: 'TerrainBuilder',
+  doc: 'Builds the a level with a round center and various circular lakes',
+  init: function (blueprint) {},
+  buildTerrain: function () {
+    var width = this.getWidth(),
+      height = this.getHeight();
+
+    var TileCatalog = Singletons.TileCatalog;
+    // First we create an array, filling it with empty tiles.
+    var tiles = WorldBuilder.build2DArray(width, height, TileCatalog.get('wallTile'));
+
+    // Now we determine the radius of the cave to carve out.
+    var radius = (Math.min(width, height) - 2) / 2;
+    WorldBuilder.fillCircle(tiles, width / 2, height / 2, radius, TileCatalog.get('floorTile'));
+
+    // Now we randomly position lakes (3 - 6 lakes)
+    var lakes = Math.round(Math.random() * 3) + 3;
+    var maxRadius = 2;
+    for (var i = 0; i < lakes; i++) {
+      // Random position, taking into consideration the radius to make sure
+      // we are within the bounds.
+      var centerX = Math.floor(Math.random() * (width - (maxRadius * 2)));
+      var centerY = Math.floor(Math.random() * (height - (maxRadius * 2)));
+      centerX += maxRadius;
+      centerY += maxRadius;
+      // Random radius
+      radius = Math.floor(Math.random() * maxRadius) + 1;
+      // Position the lake!
+      WorldBuilder.fillCircle(tiles, centerX, centerY, radius, TileCatalog.get('waterTile'));
+    }
+    // Return the tiles in an array as we only have 1 depth level.
+    this.setLevel(new Level(tiles, this.getLevelId()));
+  }
+};
+
 Mixins.RandomPositionCreatureBuilder = {
   name: 'RandomPositionCreatureBuilder',
   type: 'CreatureBuilder',
@@ -18231,26 +18469,30 @@ ItemMixins.Edible = {
     // Number of times the item can be consumed
     this._maxConsumptions = blueprint.consumptions || 1;
     this._remainingConsumptions = this._maxConsumptions;
+
+  },
+  listeners: {
+    onLoaded: function () {
+      if (this._maxConsumptions !== this._remainingConsumptions) {
+        this.setScreenName('partly eaten ' + this.getScreenName());
+        this._edibleUpdatedScreenName = true;
+      }
+    }
   },
   eat: function (entity) {
     if (entity.hasMixin('FoodConsumer')) {
       if (this.hasRemainingConsumptions()) {
         entity.modifyFullnessBy(this._foodValue);
         this._remainingConsumptions--;
+        if (this._maxConsumptions !== this._remainingConsumptions && !this._edibleUpdatedScreenName) {
+          this.setScreenName('partly eaten ' + this.getScreenName());
+          this._edibleUpdatedScreenName = true;
+        }
       }
     }
   },
   hasRemainingConsumptions: function () {
     return this._remainingConsumptions > 0;
-  },
-  //TODO; this won't work
-  describe: function () {
-    if (this._maxConsumptions !== this._remainingConsumptions) {
-      //return 'partly eaten ' + Game.Item.prototype.describe.call(this);
-      return 'partly eaten ' + this.getScreenName();
-    } else {
-      return this.getScreenName();
-    }
   }
 };
 
@@ -18325,18 +18567,18 @@ Mixins.ReportStatistics = {
    * @param category
    * @returns {*}
    */
-  getCategoryStats: function(category) {
+  getCategoryStats: function (category) {
     return this._statisticCategories.get(category);
   },
-  getStats: function(category, statistic){
+  getStats: function (category, statistic) {
     return this.getCategoryStats(category).get(statistic);
   },
   dumpStatistics: function () {
     var cats = this._statisticCategories;
-    cats.forEach(function(cat, name){
+    cats.forEach(function (cat, name) {
       console.log('Statistics for ' + name);
       var out = [];
-      cat.forEach(function(stat,statName){
+      cat.forEach(function (stat, statName) {
         console.log(statName, stat);
       });
     });
@@ -18439,6 +18681,9 @@ Mixins.Aspect = {
   getChar: function () {
     return this._character;
   },
+  setChar: function (value) {
+    this._character = value;
+  },
   getForeground: function () {
     return this._foreground;
   },
@@ -18450,6 +18695,9 @@ Mixins.Aspect = {
   },
   getScreenName: function () {
     return this._screenName;
+  },
+  setScreenName: function (value) {
+    this._screenName = value;
   },
   blocksPath: function () {
     return this._blocksPath;
@@ -18602,22 +18850,11 @@ Mixins.Destructible = {
         var spawn = new Entity(this._destroySpawnTemplate);
         this.getMap().addEntityAtPosition(spawn, this.getX(), this.getY());
       }
-      // If the entity is a corpse dropper, try to add a corpse
-      if (this.hasMixin('DestroySpawn')) {
-        this.tryDestroySpawn();
-      }
 
       if (this.hasMixin('Life')) {
-        this.kill();
-
-        if (attacker.hasMixin('ExperienceGainer')) {
-          var exp = this.calculateXp(attacker);
-          // Only give experience if more than 0.
-          if (exp > 0) {
-            attacker.giveExperience(exp);
-          }
-        }
+        this.kill(attacker);
       } else {
+        this.raiseEvent('onDestroy');
         this.getMap().removeEntity(this);
       }
 
@@ -18676,6 +18913,12 @@ Mixins.Destructible = {
     this._hp += value;
     if (!quiet) {
       Game.sendMessage(this, "You look healthier!");
+    }
+  },
+  listeners: {
+    onGainLevel: function () {
+      // Heal the entity.
+      this.setHp(this.getMaxHp());
     }
   }
 };
@@ -18906,19 +19149,25 @@ Mixins.Life = {
   isAlive: function () {
     return this._alive;
   },
-  kill: function (message) {
+  kill: function (attacker, message) {
     // Only kill once!
     if (!this._alive) {
       return;
     }
     this._alive = false;
+    //TODO: move this to the player actor
     message = message || 'You have died!';
-    Game.sendMessage(this, "You have died!");
+    Game.sendMessage(this, message);
 
+    this.raiseEvent('onDeath');
+    if (attacker) {
+      attacker.raiseEvent('onKill', this);
+    }
     // Check if the player died, and if so call their act method to prompt the user.
     if (this.hasMixin('PlayerActor')) {
       this.act();
     } else {
+      this.raiseEvent('onDestroy');
       this.getMap().removeEntity(this);
     }
   }
@@ -18941,9 +19190,9 @@ Mixins.FoodConsumer = {
   modifyFullnessBy: function (points) {
     this._fullness += points;
     if (this._fullness <= 0) {
-      this.kill("You have died of starvation!");
+      this.kill(null, "You have died of starvation!");
     } else if (this._fullness > this._maxFullness) {
-      this.kill("You choke and die!");
+      this.kill(null, "You choke and die!");
     }
   },
   getHungerState: function () {
@@ -18975,16 +19224,19 @@ Mixins.CorpseDropper = {
     // Chance of dropping a cropse (out of 100).
     this._corpseDropRate = blueprint.corpseDropRate || 100;
   },
-  tryDestroySpawn: function () {
-    if (Math.round(Math.random() * 100) < this._corpseDropRate) {
-      // Create a new corpse item and drop it.
-      var corpse = new Entity('corpse', {
-        Aspect: {
-          screenName: this.getScreenName() + ' corpse',
-          foreground: this.getForeground()
-        }
-      });
-      this.getMap().addEntityAtPosition(corpse, this.getX(), this.getY());
+  listeners: {
+    onDeath: function (attacker) {
+      // Check if we should drop a corpse.
+      if (Math.round(Math.random() * 100) <= this._corpseDropRate) {
+        // Create a new corpse item and drop it.
+        var corpse = new Entity('corpse', {
+          Aspect: {
+            screenName: this.getScreenName() + ' corpse',
+            foreground: this.getForeground()
+          }
+        });
+        this.getMap().addEntityAtPosition(corpse, this.getX(), this.getY());
+      }
     }
   }
 };
@@ -19112,12 +19364,22 @@ Mixins.ExperienceGainer = {
     // Check if we gained at least one level.
     if (levelsGained > 0) {
       Game.sendMessage(this, "You advance to level %d.", [this._level]);
-      // Heal the entity if possible.
-      if (this.hasMixin('Destructible')) {
-        this.setHp(this.getMaxHp());
+      this.raiseEvent('onGainLevel');
+    }
+  },
+  listeners: {
+    onKill: function (victim) {
+      var exp = victim.getMaxHp() + victim.getDefenseValue();
+      if (victim.hasMixin('Attacker')) {
+        exp += victim.getAttackValue();
       }
-      if (this.hasMixin('StatGainer')) {
-        this.onGainLevel();
+      // Account for level differences
+      if (victim.hasMixin('ExperienceGainer')) {
+        exp -= (this.getLevel() - victim.getLevel()) * 3;
+      }
+      // Only give experience if more than 0.
+      if (exp > 0) {
+        this.giveExperience(exp);
       }
     }
   }
@@ -19127,14 +19389,16 @@ Mixins.RandomStatGainer = {
   name: 'RandomStatGainer',
   type: 'StatGainer',
   doc: 'Will increase a random stat on level up',
-  onGainLevel: function () {
-    var statOptions = this.getStatOptions();
-    // Randomly select a stat option and execute the callback for each
-    // stat point.
-    while (this.getStatPoints() > 0) {
-      // Call the stat increasing function with this as the context.
-      statOptions.random()[1].call(this);
-      this.setStatPoints(this.getStatPoints() - 1);
+  listeners: {
+    onGainLevel: function () {
+      var statOptions = this.getStatOptions();
+      // Randomly select a stat option and execute the callback for each
+      // stat point.
+      while (this.getStatPoints() > 0) {
+        // Call the stat increasing function with this as the context.
+        statOptions.random()[1].call(this);
+        this.setStatPoints(this.getStatPoints() - 1);
+      }
     }
   }
 };
@@ -19143,11 +19407,24 @@ Mixins.PlayerStatGainer = {
   name: 'PlayerStatGainer',
   type: 'StatGainer',
   doc: 'Will ask the player which stat to increase on level up',
-  onGainLevel: function () {
-    // Setup the gain stat screen and show it.
-    var statScreen = Singletons.ScreenCatalog.getScreen('GainStatsScreen');
-    statScreen.setup(this);
-    Singletons.ScreenCatalog.getScreen('PlayScreen').setSubScreen(statScreen);
+  listeners: {
+    onGainLevel: function () {
+      // Setup the gain stat screen and show it.
+      // Setup the gain stat screen and show it.
+      var statScreen = Singletons.ScreenCatalog.getScreen('GainStatsScreen');
+      statScreen.setup(this);
+      Singletons.ScreenCatalog.getScreen('PlayScreen').setSubScreen(statScreen);
+    }
+  }
+};
+
+Mixins.WinOnDeath = {
+  name: 'WinOnDeath',
+  doc: 'Win the game when attached entity dies',
+  listeners: {
+    onDeath: function () {
+      Game.switchScreen(Singletons.ScreenCatalog.getScreen('winScreen'));
+    }
   }
 };
 
@@ -20078,11 +20355,13 @@ World.prototype.addLevel = function (level) {
 module.exports = World;
 
 },{"rot":3}],39:[function(require,module,exports){
+/*jshint bitwise: false*/
 var ROT = require('rot');
 var Level = require('./level');
 var Singletons = require('./singletons');
 var Game = require('./game');
 var Entity = require('./entity');
+var Dictionary = require('entity-blueprint-manager').Dictionary;
 
 function build2DArray(width, height, defaultValue) {
 
@@ -20101,14 +20380,56 @@ function build2DArray(width, height, defaultValue) {
 
 module.exports.build2DArray = build2DArray;
 
+function fillCircle(tiles, centerX, centerY, radius, tile) {
+  // Copied from the DrawFilledCircle algorithm
+  // http://stackoverflow.com/questions/1201200/fast-algorithm-for-drawing-filled-circles
+  var x = radius;
+  var y = 0;
+  var xChange = 1 - (radius << 1);
+  var yChange = 0;
+  var radiusError = 0;
+
+  while (x >= y) {
+    for (var i = centerX - x; i <= centerX + x; i++) {
+      tiles[i][centerY + y] = tile;
+      tiles[i][centerY - y] = tile;
+    }
+    for (var j = centerX - y; j <= centerX + y; j++) {
+      tiles[j][centerY + x] = tile;
+      tiles[j][centerY - x] = tile;
+    }
+
+    y++;
+    radiusError += yChange;
+    yChange += 2;
+    if (((radiusError << 1) + xChange) > 0) {
+      x--;
+      radiusError += xChange;
+      xChange += 2;
+    }
+  }
+}
+module.exports.fillCircle = fillCircle;
+
 /**
  * Builder for individual levels.  Build returns the levelbuilder
  */
 var LevelBuilder = (function () {
 
-  function buildLevel(levelBlueprint, blueprintOverrides) {
+  /**
+   * Pass in either the name of the level blueprint to build or an object.  If object, make sure the 'inherits' property is filled
+   * @param levelBlueprint
+   * @returns {*}
+   */
+  function buildLevel(levelBlueprint) {
 
-    var levelBuilder = new Entity(levelBlueprint, blueprintOverrides);
+    //TODO: don't like the interface to this.
+    var levelBuilder;
+    if (typeof (levelBlueprint) === 'string') {
+      levelBuilder = new Entity(levelBlueprint);
+    } else {
+      levelBuilder = new Entity(levelBlueprint.inherits, levelBlueprint);
+    }
 
     console.log('Building Level: ' + levelBuilder.getLevelId());
     console.log('Difficulty: ' + levelBuilder.getLevelDifficulty());
@@ -20141,8 +20462,25 @@ var LevelBuilder = (function () {
 
 }());
 module.exports.LevelBuilder = LevelBuilder;
+var caveToBossRegionConnection = (function () {
+  // Add a hole to the final cavern on the last level.
+  function connect(connectionDefinition, fromLevelBuilder, toLevelBuilder) {
+    var fromLevel = fromLevelBuilder.getLevel(),
+      toLevel = toLevelBuilder.getLevel();
 
-var WorldBuilder = (function () {
+    var point = fromLevel.getRandomFloorPosition();
+    //fromLevel.setTile(point.x, point.y, Singletons.TileCatalog.get('hole'));
+
+    var destPoint = toLevel.getRandomFloorPosition();
+    var entity = new Entity('hole');
+    entity.setPortalTarget(toLevel.getLevelId(), destPoint.x, destPoint.y);
+    fromLevel.addEntityAtPosition(entity, point.x, point.y);
+  }
+  return {
+    connect: connect
+  };
+})();
+var caveToCaveRegionConnector = (function () {
 
   // This fetches a list of points that overlap between one
   // region at a given depth level and a region at a level beneath it.
@@ -20224,47 +20562,88 @@ var WorldBuilder = (function () {
     }
   };
 
-  function buildWorld(worldBlueprint) {
+  function connect(connectionDefinition, fromLevelBuilder, toLevelBuilder) {
+    connectLevels(fromLevelBuilder, toLevelBuilder);
+  }
+  return {
+    connect: connect
+  };
+})();
 
-    //TODO: make this blueprint configurable
+var WorldBuilder = (function () {
 
-    var levels = [
-      LevelBuilder.buildLevel('FungusLevelBuilder', {
+  var fungusWorld = {
+    levels: [{
+        inherits: 'FungusLevelBuilder',
         LevelBuilder: {
           levelId: 'fungus01',
           levelDifficulty: 1
         }
-      }),
-      LevelBuilder.buildLevel('FungusLevelBuilder', {
+      }, {
+        inherits: 'FungusLevelBuilder',
         LevelBuilder: {
           levelId: 'fungus02',
           levelDifficulty: 2
         }
-      }),
-      LevelBuilder.buildLevel('FungusLevelBuilder', {
+      }, {
+        inherits: 'FungusLevelBuilder',
         LevelBuilder: {
           levelId: 'fungus03',
           levelDifficulty: 3
         }
-      })
-    ];
+      },
+      'zombieBossLevel01'
+    ],
+    connections: [{
+      strategy: 'CaveToCaveRegionConnector',
+      from: 'fungus01',
+      to: 'fungus02',
+      biDirectional: true,
+      leftPortal: 'stairsDown',
+      rightPortal: 'stairsUp'
+    }, {
+      strategy: 'CaveToCaveRegionConnector',
+      from: 'fungus02',
+      to: 'fungus03',
+      biDirectional: true,
+      leftPortal: 'stairsDown',
+      rightPortal: 'stairsUp'
+    }, {
+      strategy: 'CaveToBossRegionConnection',
+      from: 'fungus03',
+      to: 'zombieBossLevel01',
+      biDirectional: false,
+      leftPortal: 'hole'
+    }],
+    entryPoint: 'fungus01'
+  };
 
-    connectLevels(levels[0], levels[1]);
-    connectLevels(levels[1], levels[2]);
+  var connectionStrategies = new Dictionary({
+    ignoreCase: true
+  });
+  connectionStrategies.add('CaveToCaveRegionConnector', caveToCaveRegionConnector);
+  connectionStrategies.add('caveToBossRegionConnection', caveToBossRegionConnection);
 
-    Singletons.World.addLevel(levels[0].getLevel());
-    Singletons.World.addLevel(levels[1].getLevel());
-    Singletons.World.addLevel(levels[2].getLevel());
+  function buildWorld(worldBlueprint) {
+    worldBlueprint = fungusWorld;
 
-    Singletons.World.setActiveLevel(levels[0].getLevel().getLevelId());
+    //TODO: make this blueprint configurable
+    var levels = new Dictionary({
+      ignoreCase: true
+    });
+    worldBlueprint.levels.forEach(function (levelDefinition) {
+      var levelBuilder = LevelBuilder.buildLevel(levelDefinition);
+      levels.add(levelBuilder.getLevelId(), levelBuilder);
+      Singletons.World.addLevel(levelBuilder.getLevel());
+    });
 
+    worldBlueprint.connections.forEach(function (connectionDefinition) {
+      connectionStrategies.get(connectionDefinition.strategy)
+        .connect(connectionDefinition, levels.get(connectionDefinition.from), levels.get(connectionDefinition.to));
+    });
+
+    Singletons.World.setActiveLevel(worldBlueprint.entryPoint);
     return Singletons.World;
-
-    //return {
-    //  getEntryLevel: function () {
-    //    return levels[0].getLevel();
-    //  }
-    //};
   }
 
   return {
@@ -20275,7 +20654,7 @@ var WorldBuilder = (function () {
 
 module.exports.WorldBuilder = WorldBuilder;
 
-},{"./entity":10,"./game":11,"./level":13,"./singletons":36,"rot":3}],40:[function(require,module,exports){
+},{"./entity":10,"./game":11,"./level":13,"./singletons":36,"entity-blueprint-manager":43,"rot":3}],40:[function(require,module,exports){
 var $ = require("./../../bower_components/jquery/dist/jquery.js");
 var Dictionary = require('entity-blueprint-manager').Dictionary;
 
@@ -20374,11 +20753,31 @@ var Dictionary = require('entity-blueprint-manager').Dictionary;
 function MixinNavigator(mixinCatalog) {
   this.mixinCatalog = mixinCatalog;
 }
+MixinNavigator.prototype.buildNode = function (mixin) {
+
+  var result = {
+    name: mixin.name,
+    doc: mixin.doc,
+    listeners: null,
+    children: []
+  };
+
+  if (mixin.listeners) {
+    var l = [];
+    for (var key in mixin.listeners) {
+      l.push(key);
+    }
+    result.listeners = l.join(',');
+  }
+
+  return result;
+};
 
 MixinNavigator.prototype.render = function ($container) {
   var mixinCatalog = this.mixinCatalog;
   var ul = $('<ul></ul>');
   $container.append(ul);
+  var that = this;
 
   var map = new Dictionary({
     ignoreCase: true
@@ -20394,11 +20793,7 @@ MixinNavigator.prototype.render = function ($container) {
 
     var el;
     if (!map.containsKey(mixin.name)) {
-      el = {
-        name: mixin.name,
-        doc: mixin.doc,
-        children: []
-      };
+      el = that.buildNode(mixin);
       map.add(mixin.name, el);
     } else {
       el = map.get(mixin.name);
@@ -20433,7 +20828,7 @@ MixinNavigator.prototype.render = function ($container) {
 
 };
 MixinNavigator.prototype.buildTree = function ($ul, element) {
-  var li = $('<li></li>').text(element.name + ' - ' + (element.doc || 'Undocumented'));
+  var li = $('<li></li>').text(element.name + ' - ' + (element.doc || 'Undocumented') + '-' + element.listeners);
   $ul.append(li);
   if (element.children.length) {
     element.children.sort(function (a, b) {

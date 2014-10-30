@@ -187,6 +187,43 @@ Mixins.CellularAutomataTerrainBuilder = {
   }
 };
 
+Mixins.BossLevelTerrainBuilder = {
+  name: 'BossLevelTerrainBuilder',
+  type: 'TerrainBuilder',
+  doc: 'Builds the a level with a round center and various circular lakes',
+  init: function (blueprint) {},
+  buildTerrain: function () {
+    var width = this.getWidth(),
+      height = this.getHeight();
+
+    var TileCatalog = Singletons.TileCatalog;
+    // First we create an array, filling it with empty tiles.
+    var tiles = WorldBuilder.build2DArray(width, height, TileCatalog.get('wallTile'));
+
+    // Now we determine the radius of the cave to carve out.
+    var radius = (Math.min(width, height) - 2) / 2;
+    WorldBuilder.fillCircle(tiles, width / 2, height / 2, radius, TileCatalog.get('floorTile'));
+
+    // Now we randomly position lakes (3 - 6 lakes)
+    var lakes = Math.round(Math.random() * 3) + 3;
+    var maxRadius = 2;
+    for (var i = 0; i < lakes; i++) {
+      // Random position, taking into consideration the radius to make sure
+      // we are within the bounds.
+      var centerX = Math.floor(Math.random() * (width - (maxRadius * 2)));
+      var centerY = Math.floor(Math.random() * (height - (maxRadius * 2)));
+      centerX += maxRadius;
+      centerY += maxRadius;
+      // Random radius
+      radius = Math.floor(Math.random() * maxRadius) + 1;
+      // Position the lake!
+      WorldBuilder.fillCircle(tiles, centerX, centerY, radius, TileCatalog.get('waterTile'));
+    }
+    // Return the tiles in an array as we only have 1 depth level.
+    this.setLevel(new Level(tiles, this.getLevelId()));
+  }
+};
+
 Mixins.RandomPositionCreatureBuilder = {
   name: 'RandomPositionCreatureBuilder',
   type: 'CreatureBuilder',

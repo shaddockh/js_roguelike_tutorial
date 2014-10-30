@@ -61,4 +61,26 @@ var Tiles = {
   }
 };
 
+Tiles.holeTile = {
+  inherits: 'walkableTile',
+  aspect: {
+    character: 'O',
+    foreground: 'white',
+    screenName: 'hole'
+  }
+};
+
+Tiles.waterTile = {
+  inherits: 'tile',
+  aspect: {
+    character: '~',
+    foreground: 'blue',
+    obscuredForeground: 'darkblue'
+  },
+  tile: {
+    isWalkable: false,
+    blocksLight: false
+  }
+};
+
 module.exports = Tiles;

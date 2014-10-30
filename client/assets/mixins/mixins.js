@@ -157,6 +157,9 @@ Mixins.Aspect = {
   getChar: function () {
     return this._character;
   },
+  setChar: function (value) {
+    this._character = value;
+  },
   getForeground: function () {
     return this._foreground;
   },
@@ -168,6 +171,9 @@ Mixins.Aspect = {
   },
   getScreenName: function () {
     return this._screenName;
+  },
+  setScreenName: function (value) {
+    this._screenName = value;
   },
   blocksPath: function () {
     return this._blocksPath;
@@ -320,22 +326,11 @@ Mixins.Destructible = {
         var spawn = new Entity(this._destroySpawnTemplate);
         this.getMap().addEntityAtPosition(spawn, this.getX(), this.getY());
       }
-      // If the entity is a corpse dropper, try to add a corpse
-      if (this.hasMixin('DestroySpawn')) {
-        this.tryDestroySpawn();
-      }
 
       if (this.hasMixin('Life')) {
-        this.kill();
-
-        if (attacker.hasMixin('ExperienceGainer')) {
-          var exp = this.calculateXp(attacker);
-          // Only give experience if more than 0.
-          if (exp > 0) {
-            attacker.giveExperience(exp);
-          }
-        }
+        this.kill(attacker);
       } else {
+        this.raiseEvent('onDestroy');
         this.getMap().removeEntity(this);
       }
 
@@ -394,6 +389,12 @@ Mixins.Destructible = {
     this._hp += value;
     if (!quiet) {
       Game.sendMessage(this, "You look healthier!");
+    }
+  },
+  listeners: {
+    onGainLevel: function () {
+      // Heal the entity.
+      this.setHp(this.getMaxHp());
     }
   }
 };
@@ -624,19 +625,25 @@ Mixins.Life = {
   isAlive: function () {
     return this._alive;
   },
-  kill: function (message) {
+  kill: function (attacker, message) {
     // Only kill once!
     if (!this._alive) {
       return;
     }
     this._alive = false;
+    //TODO: move this to the player actor
     message = message || 'You have died!';
-    Game.sendMessage(this, "You have died!");
+    Game.sendMessage(this, message);
 
+    this.raiseEvent('onDeath');
+    if (attacker) {
+      attacker.raiseEvent('onKill', this);
+    }
     // Check if the player died, and if so call their act method to prompt the user.
     if (this.hasMixin('PlayerActor')) {
       this.act();
     } else {
+      this.raiseEvent('onDestroy');
       this.getMap().removeEntity(this);
     }
   }
@@ -659,9 +666,9 @@ Mixins.FoodConsumer = {
   modifyFullnessBy: function (points) {
     this._fullness += points;
     if (this._fullness <= 0) {
-      this.kill("You have died of starvation!");
+      this.kill(null, "You have died of starvation!");
     } else if (this._fullness > this._maxFullness) {
-      this.kill("You choke and die!");
+      this.kill(null, "You choke and die!");
     }
   },
   getHungerState: function () {
@@ -693,16 +700,19 @@ Mixins.CorpseDropper = {
     // Chance of dropping a cropse (out of 100).
     this._corpseDropRate = blueprint.corpseDropRate || 100;
   },
-  tryDestroySpawn: function () {
-    if (Math.round(Math.random() * 100) < this._corpseDropRate) {
-      // Create a new corpse item and drop it.
-      var corpse = new Entity('corpse', {
-        Aspect: {
-          screenName: this.getScreenName() + ' corpse',
-          foreground: this.getForeground()
-        }
-      });
-      this.getMap().addEntityAtPosition(corpse, this.getX(), this.getY());
+  listeners: {
+    onDeath: function (attacker) {
+      // Check if we should drop a corpse.
+      if (Math.round(Math.random() * 100) <= this._corpseDropRate) {
+        // Create a new corpse item and drop it.
+        var corpse = new Entity('corpse', {
+          Aspect: {
+            screenName: this.getScreenName() + ' corpse',
+            foreground: this.getForeground()
+          }
+        });
+        this.getMap().addEntityAtPosition(corpse, this.getX(), this.getY());
+      }
     }
   }
 };
@@ -830,12 +840,22 @@ Mixins.ExperienceGainer = {
     // Check if we gained at least one level.
     if (levelsGained > 0) {
       Game.sendMessage(this, "You advance to level %d.", [this._level]);
-      // Heal the entity if possible.
-      if (this.hasMixin('Destructible')) {
-        this.setHp(this.getMaxHp());
+      this.raiseEvent('onGainLevel');
+    }
+  },
+  listeners: {
+    onKill: function (victim) {
+      var exp = victim.getMaxHp() + victim.getDefenseValue();
+      if (victim.hasMixin('Attacker')) {
+        exp += victim.getAttackValue();
       }
-      if (this.hasMixin('StatGainer')) {
-        this.onGainLevel();
+      // Account for level differences
+      if (victim.hasMixin('ExperienceGainer')) {
+        exp -= (this.getLevel() - victim.getLevel()) * 3;
+      }
+      // Only give experience if more than 0.
+      if (exp > 0) {
+        this.giveExperience(exp);
       }
     }
   }
@@ -845,14 +865,16 @@ Mixins.RandomStatGainer = {
   name: 'RandomStatGainer',
   type: 'StatGainer',
   doc: 'Will increase a random stat on level up',
-  onGainLevel: function () {
-    var statOptions = this.getStatOptions();
-    // Randomly select a stat option and execute the callback for each
-    // stat point.
-    while (this.getStatPoints() > 0) {
-      // Call the stat increasing function with this as the context.
-      statOptions.random()[1].call(this);
-      this.setStatPoints(this.getStatPoints() - 1);
+  listeners: {
+    onGainLevel: function () {
+      var statOptions = this.getStatOptions();
+      // Randomly select a stat option and execute the callback for each
+      // stat point.
+      while (this.getStatPoints() > 0) {
+        // Call the stat increasing function with this as the context.
+        statOptions.random()[1].call(this);
+        this.setStatPoints(this.getStatPoints() - 1);
+      }
     }
   }
 };
@@ -861,11 +883,24 @@ Mixins.PlayerStatGainer = {
   name: 'PlayerStatGainer',
   type: 'StatGainer',
   doc: 'Will ask the player which stat to increase on level up',
-  onGainLevel: function () {
-    // Setup the gain stat screen and show it.
-    var statScreen = Singletons.ScreenCatalog.getScreen('GainStatsScreen');
-    statScreen.setup(this);
-    Singletons.ScreenCatalog.getScreen('PlayScreen').setSubScreen(statScreen);
+  listeners: {
+    onGainLevel: function () {
+      // Setup the gain stat screen and show it.
+      // Setup the gain stat screen and show it.
+      var statScreen = Singletons.ScreenCatalog.getScreen('GainStatsScreen');
+      statScreen.setup(this);
+      Singletons.ScreenCatalog.getScreen('PlayScreen').setSubScreen(statScreen);
+    }
+  }
+};
+
+Mixins.WinOnDeath = {
+  name: 'WinOnDeath',
+  doc: 'Win the game when attached entity dies',
+  listeners: {
+    onDeath: function () {
+      Game.switchScreen(Singletons.ScreenCatalog.getScreen('winScreen'));
+    }
   }
 };
 

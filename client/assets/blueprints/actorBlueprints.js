@@ -50,16 +50,23 @@ Blueprints.FungusTemplate = {
   RandomStatGainer: {}
 };
 
+Blueprints.TaskActor = {
+  inherits: 'Actor',
+  name: 'TaskActor',
+  TaskActor: {
+    aiTasks: ['aiTaskWander']
+  }
+};
+
 //////////////////////////////
 // WANDERERS
 /////////////////////////////
 Blueprints.WanderingActorTemplate = {
-  inherits: 'Actor',
+  inherits: 'TaskActor',
   name: 'WanderingActorTemplate',
   TaskActor: {
     aiTasks: ['aiTaskWander']
   },
-  //WanderingActor: {},
   Destructible: {
     destroySpawnTemplate: 'Bloodstain'
   },
@@ -107,7 +114,7 @@ Blueprints.NewtTemplate = {
 // HUNTERS
 /////////////////////////////
 Blueprints.HunterActorTemplate = {
-  inherits: 'Actor',
+  inherits: 'TaskActor',
   name: 'HunterActorTemplate',
   Sight: {
     sightRadius: 5
@@ -139,6 +146,50 @@ Blueprints.KoboldTemplate = {
   },
   Sight: {
     sightRadius: 5
+  }
+};
+
+Blueprints.GiantZombie = {
+  name: 'giantZombie',
+  inherits: 'HunterActorTemplate',
+  Aspect: {
+    character: 'Z',
+    screenName: 'giant zombie'
+  },
+  Destructible: {
+    maxHp: 30,
+    defenseValue: 5
+  },
+  Attacker: {
+    attackValue: 8
+  },
+  Sight: {
+    sightRadius: 6
+  },
+  ExperienceGainer: {
+    level: 5
+  },
+  TaskActor: {
+    aiTasks: ['AiTaskWander', 'AiTaskHunt', 'AiTaskSpawnSlime', 'AiTaskGrowArm']
+  },
+  WinOnDeath: {}
+};
+
+Blueprints.slime = {
+  name: 'slime',
+  inherits: 'HunterActorTemplate',
+  Aspect: {
+    character: 's',
+    foreground: 'lightGreen'
+  },
+  Destructible: {
+    maxHp: 10
+  },
+  Attacker: {
+    attackValue: 5
+  },
+  Sight: {
+    sightRadius: 3
   }
 };
 
