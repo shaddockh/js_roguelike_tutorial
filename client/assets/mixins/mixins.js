@@ -197,6 +197,10 @@ Mixins.Aspect = {
   describeThe: function (capitalize) {
     var prefix = capitalize ? 'The' : 'the';
     return prefix + ' ' + this.describe();
+  },
+  getRepresentation: function () {
+    return '%c{' + (this._foreground || 'white') + '}%b{' + (this._background || 'black') + '}' + (this._character || ' ') +
+      '%c{white}%b{black}';
   }
 };
 
@@ -395,6 +399,15 @@ Mixins.Destructible = {
     onGainLevel: function () {
       // Heal the entity.
       this.setHp(this.getMaxHp());
+    },
+    details: function () {
+      return [{
+        key: 'defense',
+        value: this.getDefenseValue()
+      }, {
+        key: 'hp',
+        value: this.getHp()
+      }];
     }
   }
 };
@@ -405,6 +418,14 @@ Mixins.Attacker = {
   doc: 'Attacker',
   init: function (blueprint) {
     this._attackValue = blueprint.attackValue || 1;
+  },
+  listeners: {
+    details: function () {
+      return [{
+        key: 'attack',
+        value: this.getAttackValue()
+      }];
+    }
   },
   getAttackValue: function () {
     var modifier = 0;
@@ -857,6 +878,12 @@ Mixins.ExperienceGainer = {
       if (exp > 0) {
         this.giveExperience(exp);
       }
+    },
+    details: function () {
+      return [{
+        key: 'level',
+        value: this.getLevel()
+      }];
     }
   }
 };
@@ -901,6 +928,29 @@ Mixins.WinOnDeath = {
     onDeath: function () {
       Game.switchScreen(Singletons.ScreenCatalog.getScreen('winScreen'));
     }
+  }
+};
+
+Mixins.Examinable = {
+  name: 'Examinable',
+  doc: 'Attach to a blueprint that can be examined',
+  init: function (blueprint) {
+
+  },
+  examine: function () {
+    var details = [];
+    var detailGroups = this.raiseEvent('details');
+    // Iterate through each return value, grabbing the details from the arrays.
+    if (detailGroups) {
+      for (var i = 0, l = detailGroups.length; i < l; i++) {
+        if (detailGroups[i]) {
+          for (var j = 0; j < detailGroups[i].length; j++) {
+            details.push(detailGroups[i][j].key + ': ' + detailGroups[i][j].value);
+          }
+        }
+      }
+    }
+    return details.join(', ');
   }
 };
 

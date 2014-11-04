@@ -18,6 +18,12 @@ ItemMixins.Edible = {
         this.setScreenName('partly eaten ' + this.getScreenName());
         this._edibleUpdatedScreenName = true;
       }
+    },
+    details: function () {
+      return [{
+        key: 'food',
+        value: this._foodValue
+      }];
     }
   },
   eat: function (entity) {
@@ -45,6 +51,24 @@ ItemMixins.Equippable = {
     this._defenseValue = blueprint.defenseValue || 0;
     this._wieldable = blueprint.wieldable || false;
     this._wearable = blueprint.wearable || false;
+  },
+  listeners: {
+    details: function () {
+      var results = [];
+      if (this._wieldable) {
+        results.push({
+          key: 'attack',
+          value: this.getAttackValue()
+        });
+      }
+      if (this._wearable) {
+        results.push({
+          key: 'defense',
+          value: this.getDefenseValue()
+        });
+      }
+      return results;
+    }
   },
   getAttackValue: function () {
     return this._attackValue;

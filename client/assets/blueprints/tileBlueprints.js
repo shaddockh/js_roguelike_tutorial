@@ -10,7 +10,10 @@ var Tiles = {
   },
   nullTile: {
     name: 'nullTile',
-    inherits: 'tile'
+    inherits: 'tile',
+    aspect: {
+      screenName: 'Unknown'
+    }
   },
   walkableTile: {
     name: 'walkableTile',
@@ -27,6 +30,7 @@ var Tiles = {
       character: '.',
       foreground: 'silver',
       screenName: 'floor'
+
     }
   },
   stairsUpTile: {
@@ -75,7 +79,8 @@ Tiles.waterTile = {
   aspect: {
     character: '~',
     foreground: 'blue',
-    obscuredForeground: 'darkblue'
+    obscuredForeground: 'darkblue',
+    screenName: 'water'
   },
   tile: {
     isWalkable: false,

@@ -7,7 +7,7 @@ Blueprints.PlayerTemplate = {
     character: '@',
     foreground: 'white',
     background: 'black',
-    screenName: 'Player'
+    screenName: 'Human (you)'
   },
   PlayerActor: {},
   Attacker: {

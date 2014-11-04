@@ -1,9 +1,11 @@
 module.exports = {
   'DropScreen': require('./dropscreen'),
   'EatScreen': require('./eatscreen'),
+  'ExamineScreen': require('./examinescreen'),
   'GainStatsScreen': require('./gainstatscreen'),
   'HelpScreen': require('./helpscreen'),
   'InventoryScreen': require('./inventoryScreen'),
+  'LookScreen': require('./lookscreen'),
   'LoseScreen': require('./losescreen'),
   'PickupScreen': require('./pickupscreen'),
   'PlayScreen': require('./playscreen'),

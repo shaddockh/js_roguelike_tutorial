@@ -8,7 +8,8 @@ Blueprints.Actor = {
     screenName: 'Actor',
     blocksPath: true
   },
-  Life: {}
+  Life: {},
+  Examinable: {}
 };
 
 Blueprints.Item = {
@@ -19,6 +20,7 @@ Blueprints.Item = {
     blocksPath: false,
     renderLayer: -1
   },
+  Examinable: {},
   Item: {}
 };
 Blueprints.BaseFood = {
@@ -112,7 +114,8 @@ Blueprints.Hole = {
   Aspect: {
     character: 'O',
     foreground: 'white',
-    screenName: 'hole'
+    screenName: 'hole',
+    renderLayer: -99
   }
 };
 

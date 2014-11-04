@@ -51,20 +51,11 @@ playScreen.render = function (display) {
     return;
   }
 
-  var currentLevel = world.getActiveLevel();
-  var screenWidth = Game.getScreenWidth();
-  var screenHeight = Game.getScreenHeight();
-  // Make sure the x-axis doesn't go to the left of the left bound
-  var topLeftX = Math.max(0, player.getX() - (screenWidth / 2));
-  // Make sure we still have enough space to fit an entire game screen
-  topLeftX = Math.min(topLeftX, currentLevel.getWidth() - screenWidth);
-  // Make sure the y-axis doesn't above the top bound
-  var topLeftY = Math.max(0, player.getY() - (screenHeight / 2));
-  // Make sure we still have enough space to fit an entire game screen
-  topLeftY = Math.min(topLeftY, currentLevel.getHeight() - screenHeight);
+  playScreen.renderTiles(display);
 
   // Draw the current viewport
-  currentLevel.drawViewPort(display, topLeftX, topLeftY, topLeftX + screenWidth, topLeftY + screenHeight);
+  var screenWidth = Game.getScreenWidth(),
+    screenHeight = Game.getScreenHeight();
 
   // Get the messages in the player's queue and render them
   var messageY = 0;
@@ -90,6 +81,35 @@ playScreen.render = function (display) {
   // Render hunger state
   var hungerState = player.getHungerState();
   display.drawText(screenWidth - hungerState.length, screenHeight, hungerState);
+};
+playScreen.renderTiles = function (display) {
+
+  // Draw the current viewport
+  var currentLevel = world.getActiveLevel(),
+    viewPort = playScreen.getScreenOffsets();
+
+  currentLevel.drawViewPort(display, viewPort.x, viewPort.y, viewPort.x1, viewPort.y1);
+};
+
+playScreen.getScreenOffsets = function () {
+  var currentLevel = world.getActiveLevel();
+  var screenWidth = Game.getScreenWidth();
+  var screenHeight = Game.getScreenHeight();
+  // Make sure the x-axis doesn't go to the left of the left bound
+  var topLeftX = Math.max(0, player.getX() - (screenWidth / 2));
+  // Make sure we still have enough space to fit an entire game screen
+  topLeftX = Math.min(topLeftX, currentLevel.getWidth() - screenWidth);
+  // Make sure the y-axis doesn't above the top bound
+  var topLeftY = Math.max(0, player.getY() - (screenHeight / 2));
+  // Make sure we still have enough space to fit an entire game screen
+  topLeftY = Math.min(topLeftY, currentLevel.getHeight() - screenHeight);
+
+  return {
+    x: topLeftX,
+    y: topLeftY,
+    x1: topLeftX + screenWidth,
+    y1: topLeftY + screenHeight
+  };
 };
 
 playScreen.gameEnded = false;
@@ -142,6 +162,18 @@ playScreen.showInventory = function () {
   playScreen.showItemsSubScreen('InventoryScreen', player.getItems(), 'You are not carrying anything.');
 };
 
+playScreen.showLookScreen = function () {
+  // Setup the look screen.
+  var offsets = playScreen.getScreenOffsets();
+  var lookScreen = Singletons.ScreenCatalog.getScreen('LookScreen');
+
+  lookScreen.setup(player,
+    player.getX(), player.getY(),
+    offsets.x, offsets.y);
+  playScreen.setSubScreen(lookScreen);
+  return;
+};
+
 playScreen.dropItem = function () {
   playScreen.showItemsSubScreen('DropScreen', player.getItems(), 'You have nothing to drop.');
 };
@@ -186,6 +218,10 @@ playScreen.showItemsSubScreen = function (subScreen, items, emptyMessage) {
     Game.sendMessage(player, emptyMessage);
     Game.refresh();
   }
+};
+
+playScreen.showExamineScreen = function () {
+  playScreen.showItemsSubScreen('ExamineScreen', player.getItems(), 'You have nothing to examine.');
 };
 
 playScreen.showHelpScreen = function () {
@@ -248,6 +284,10 @@ playScreen.handleInput = function (inputType, inputData) {
       // Show the eat screen
       playScreen.eatItem();
       return;
+    case ROT.VK_X:
+      //show the examine screen
+      playScreen.showExamineScreen();
+      return;
     case ROT.VK_W:
       if (inputData.shiftKey) {
         playScreen.showWearScreen();
@@ -269,6 +309,8 @@ playScreen.handleInput = function (inputType, inputData) {
     } else if (keyChar === '?') {
       playScreen.showHelpScreen();
       return;
+    } else if (keyChar === ';') {
+      playScreen.showLookScreen();
     } else {
       // Not a valid key
       return;

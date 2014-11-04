@@ -25,6 +25,15 @@ var Level = function (tiles, levelId) {
 
 };
 
+Level.prototype.queries = {
+  creatures: function (entity) {
+    return entity.hasMixin('actor');
+  },
+  items: function (entity) {
+    return entity.hasMixin('item');
+  }
+};
+
 Level.prototype.getLevelId = function () {
   return this._levelId;
 };
@@ -125,13 +134,10 @@ Level.prototype.queryEntitiesAt = function (x, y, filter) {
 };
 
 Level.prototype.getItemsAt = function (x, y) {
-  return this.queryEntitiesAt(x, y, function (entity) {
-    return entity.hasMixin('item');
-  });
+  return this.queryEntitiesAt(x, y, this.queries.items);
 };
 
 Level.prototype.getEntitiesWithinRadius = function (centerX, centerY, radius) {
-  var results = [];
   // Determine our bounds
   var leftX = centerX - radius;
   var rightX = centerX + radius;
@@ -139,13 +145,15 @@ Level.prototype.getEntitiesWithinRadius = function (centerX, centerY, radius) {
   var bottomY = centerY + radius;
 
   // Iterate through our entities, adding any which are within the bounds
-  this._entities.forEach(function (entity) {
-    if (entity.isInBounds(leftX, topY, rightX, bottomY)) {
-      results.push(entity);
-    }
+  var results = this._entities.filter(function (entity) {
+    return entity.isInBounds(leftX, topY, rightX, bottomY);
   });
 
   return results;
+};
+
+Level.prototype.queryEntitiesWithinRadiua = function (centerX, centerY, radius, filter) {
+  return this.getEntitiesWithinRadius(centerX, centerY, radius).filter(filter);
 };
 
 // Standard getters

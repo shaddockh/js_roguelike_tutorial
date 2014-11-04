@@ -159,3 +159,5 @@ Tutorial 15
 Tutorial 16
 ====
 * From: http://www.codingcookies.com/2013/11/25/building-a-roguelike-in-javascript-part-16/
+* implemented base tutorial.  Now to open up for bugfixes, etc.
+
