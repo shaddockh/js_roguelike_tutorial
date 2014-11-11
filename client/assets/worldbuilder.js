@@ -78,11 +78,9 @@ var LevelBuilder = (function () {
     console.log('Difficulty: ' + levelBuilder.getLevelDifficulty());
 
     if (levelBuilder.hasMixin('TerrainBuilder')) {
+      console.profile("Build Terrain - " + levelBuilder.getLevelId());
       levelBuilder.buildTerrain();
-    }
-
-    if (levelBuilder.hasMixin('FOVBuilder')) {
-      levelBuilder.buildFOV();
+      console.profileEnd();
     }
 
     if (levelBuilder.hasMixin('CreatureBuilder')) {
@@ -91,6 +89,14 @@ var LevelBuilder = (function () {
 
     if (levelBuilder.hasMixin('ItemBuilder')) {
       levelBuilder.buildItems();
+    }
+
+    if (levelBuilder.hasMixin('FOVBuilder')) {
+      levelBuilder.buildFOV();
+    }
+
+    if (levelBuilder.hasMixin('Lighting')) {
+      levelBuilder.calculateLighting();
     }
 
     levelBuilder.dumpStatistics();
@@ -215,52 +221,6 @@ var caveToCaveRegionConnector = (function () {
 
 var WorldBuilder = (function () {
 
-  var fungusWorld = {
-    levels: [{
-        inherits: 'FungusLevelBuilder',
-        LevelBuilder: {
-          levelId: 'fungus01',
-          levelDifficulty: 1
-        }
-      }, {
-        inherits: 'FungusLevelBuilder',
-        LevelBuilder: {
-          levelId: 'fungus02',
-          levelDifficulty: 2
-        }
-      }, {
-        inherits: 'FungusLevelBuilder',
-        LevelBuilder: {
-          levelId: 'fungus03',
-          levelDifficulty: 3
-        }
-      },
-      'zombieBossLevel01'
-    ],
-    connections: [{
-      strategy: 'CaveToCaveRegionConnector',
-      from: 'fungus01',
-      to: 'fungus02',
-      biDirectional: true,
-      leftPortal: 'stairsDown',
-      rightPortal: 'stairsUp'
-    }, {
-      strategy: 'CaveToCaveRegionConnector',
-      from: 'fungus02',
-      to: 'fungus03',
-      biDirectional: true,
-      leftPortal: 'stairsDown',
-      rightPortal: 'stairsUp'
-    }, {
-      strategy: 'CaveToBossRegionConnection',
-      from: 'fungus03',
-      to: 'zombieBossLevel01',
-      biDirectional: false,
-      leftPortal: 'hole'
-    }],
-    entryPoint: 'fungus01'
-  };
-
   var connectionStrategies = new Dictionary({
     ignoreCase: true
   });
@@ -268,22 +228,26 @@ var WorldBuilder = (function () {
   connectionStrategies.add('caveToBossRegionConnection', caveToBossRegionConnection);
 
   function buildWorld(worldBlueprint) {
-    worldBlueprint = fungusWorld;
+    worldBlueprint = Singletons.BlueprintCatalog.getBlueprint(worldBlueprint);
 
     //TODO: make this blueprint configurable
     var levels = new Dictionary({
       ignoreCase: true
     });
+    console.profile('Build levels');
     worldBlueprint.levels.forEach(function (levelDefinition) {
       var levelBuilder = LevelBuilder.buildLevel(levelDefinition);
       levels.add(levelBuilder.getLevelId(), levelBuilder);
       Singletons.World.addLevel(levelBuilder.getLevel());
     });
+    console.profileEnd();
 
+    console.profile('Connect levels');
     worldBlueprint.connections.forEach(function (connectionDefinition) {
       connectionStrategies.get(connectionDefinition.strategy)
         .connect(connectionDefinition, levels.get(connectionDefinition.from), levels.get(connectionDefinition.to));
     });
+    console.profileEnd();
 
     Singletons.World.setActiveLevel(worldBlueprint.entryPoint);
     return Singletons.World;

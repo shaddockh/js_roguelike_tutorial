@@ -1,7 +1,7 @@
 module.exports = [
-  require('./builderMixins'),
-  require('./tileMixins'),
-  require('./mixins'),
-  require('./aiMixins'),
-  require('./itemMixins')
+  require('./builder/mxLevelBuilder'),
+  require('./mxTerrain'),
+  require('./mxUnsorted'),
+  require('./mxAI'),
+  require('./mxItem')
 ];

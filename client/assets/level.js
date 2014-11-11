@@ -1,10 +1,12 @@
-var Singletons = require('./singletons');
-var WorldBuilder = require('./worldbuilder');
-var ROT = require('rot');
+var Singletons = require('./singletons'),
+  WorldBuilder = require('./worldbuilder'),
+  ROT = require('rot'),
+  utils = require('./utils'),
+  _ = require('lodash');
 
 //Correponds to "World" in the other tutorial
 
-var Level = function (tiles, levelId) {
+var Level = function (tiles, levelId, entities) {
   this._tiles = tiles;
   this._levelId = levelId || 'level';
   // cache the width and height based
@@ -15,27 +17,27 @@ var Level = function (tiles, levelId) {
 
   this._entities = [];
   this._fov = null;
+  this._lightingModel = null;
   this._explored = WorldBuilder.build2DArray(this._width, this._height, false);
-  this.setFov(
-    new ROT.FOV.PreciseShadowcasting(function (x, y) {
-      return true;
-    }, {
-      topology: 8
-    }));
-
-};
-
-Level.prototype.queries = {
-  creatures: function (entity) {
-    return entity.hasMixin('actor');
-  },
-  items: function (entity) {
-    return entity.hasMixin('item');
+  if (entities && entities.length) {
+    for (var e = 0; e < entities.length; e++) {
+      var entity = entities[e];
+      this.addEntityAtPosition(entity, entity.getX(), entity.getY());
+    }
   }
+
 };
 
 Level.prototype.getLevelId = function () {
   return this._levelId;
+};
+
+Level.prototype.getLightingModel = function () {
+  return this._lightingModel;
+};
+
+Level.prototype.setLightingModel = function (lightingModel) {
+  this._lightingModel = lightingModel;
 };
 
 /**
@@ -43,10 +45,8 @@ Level.prototype.getLevelId = function () {
  */
 Level.prototype.activate = function () {
   var scheduler = Singletons.World.getScheduler();
-  this._entities.forEach(function (entity) {
-    if (entity.hasMixin('Actor')) {
-      scheduler.add(entity, true);
-    }
+  _.forEach(_.filter(this._entities, utils.namedEntityFilters.hasMixin('Actor')), function (entity) {
+    scheduler.add(entity, true);
   });
 };
 
@@ -55,10 +55,8 @@ Level.prototype.activate = function () {
  */
 Level.prototype.deactivate = function () {
   var scheduler = Singletons.World.getScheduler();
-  this._entities.forEach(function (entity) {
-    if (entity.hasMixin('Actor')) {
-      scheduler.remove(entity);
-    }
+  _.forEach(_.filter(this._entities, utils.namedEntityFilters.hasMixin('Actor')), function (entity) {
+    scheduler.remove(entity);
   });
 };
 
@@ -84,14 +82,15 @@ Level.prototype.drawViewPort = function (display, x1, y1, x2, y2) {
         // at the offset position.
         var tile = this.getTile(x, y);
         tile.draw(display, x - x1, y - y1, {
-          outsideFOV: !visibleCells[x + ',' + y]
+          outsideFOV: !visibleCells[x + ',' + y],
+          lightColor: this.getLightingModel().getColorAtCoord(x, y)
         });
       }
     }
   }
 
   // Render the entities
-  var entities = this.getEntities().filter(function (entity) {
+  var entities = _.filter(this.getEntities(), function (entity) {
     // Only render the entity if they would show up on the screen
     if (entity.isInBounds(x1, y1, x2, y2)) {
       if (entity.hasMixin('aspect')) {
@@ -100,13 +99,13 @@ Level.prototype.drawViewPort = function (display, x1, y1, x2, y2) {
         }
       }
     }
-    return false;
   });
 
   entities.sort(function (a, b) {
     return a.getRenderLayer() - b.getRenderLayer();
   });
-  entities.forEach(function (entity) {
+
+  _.forEach(entities, function (entity) {
     entity.draw(display, entity.getX() - x1, entity.getY() - y1);
   });
 };
@@ -118,23 +117,27 @@ Level.prototype.getEntities = function () {
 Level.prototype.getEntitiesAt = function (x, y) {
   // Iterate through all entities searching for one with
   // matching position
-  return this.getEntities().filter(function (ent) {
+  return _.filter(this.getEntities(), function (ent) {
     if (ent.getX() === x && ent.getY() === y) {
       return true;
-    } else {
-      return false;
     }
   });
+};
+
+Level.prototype.queryEntities = function (filter) {
+  // Iterate through all entities searching for one with
+  // matching position
+  return _.filter(this.getEntities(), filter);
 };
 
 Level.prototype.queryEntitiesAt = function (x, y, filter) {
   // Iterate through all entities searching for one with
   // matching position
-  return this.getEntitiesAt(x, y).filter(filter);
+  return _.filter(this.getEntitiesAt(x, y), filter);
 };
 
 Level.prototype.getItemsAt = function (x, y) {
-  return this.queryEntitiesAt(x, y, this.queries.items);
+  return this.queryEntitiesAt(x, y, utils.namedEntityFilters.items);
 };
 
 Level.prototype.getEntitiesWithinRadius = function (centerX, centerY, radius) {
@@ -145,26 +148,45 @@ Level.prototype.getEntitiesWithinRadius = function (centerX, centerY, radius) {
   var bottomY = centerY + radius;
 
   // Iterate through our entities, adding any which are within the bounds
-  var results = this._entities.filter(function (entity) {
+  return _.filter(this._entities, function (entity) {
     return entity.isInBounds(leftX, topY, rightX, bottomY);
   });
-
-  return results;
 };
 
+/**
+ * Will return an array of entities within a specified radius optionally filtered by filter
+ * @param centerX
+ * @param centerY
+ * @param radius
+ * @param filter
+ * @returns {*}
+ */
 Level.prototype.queryEntitiesWithinRadiua = function (centerX, centerY, radius, filter) {
-  return this.getEntitiesWithinRadius(centerX, centerY, radius).filter(filter);
+  return _.filter(this.getEntitiesWithinRadius(centerX, centerY, radius), filter);
 };
 
-// Standard getters
+/**
+ * Gets the width of the level
+ * @returns {*|Level._width}
+ */
 Level.prototype.getWidth = function () {
   return this._width;
 };
+
+/**
+ * Gets the height of the level
+ * @returns {*|Level._height}
+ */
 Level.prototype.getHeight = function () {
   return this._height;
 };
 
-// Gets the tile for a given coordinate set
+/**
+ * Gets the tile at a given coordinate
+ * @param x
+ * @param y
+ * @returns {*}
+ */
 Level.prototype.getTile = function (x, y) {
   // Make sure we are inside the bounds. If we aren't, return
   // null tile.
@@ -253,6 +275,8 @@ Level.prototype.addEntity = function (entity) {
   entity.setMap(this);
   // Add the entity to the list of entities
   this._entities.push(entity);
+
+  entity.raiseEvent(utils.events.onEnteredLevel, this);
   // Check if this entity is an actor, and if so add
   // them to the scheduler
   if (this.isActiveLevel()) {

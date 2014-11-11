@@ -1,4 +1,17 @@
 var Blueprints = {};
+
+Blueprints.Actor = {
+  inherits: '_base',
+  name: 'Actor',
+  Position: {},
+  Moveable: {},
+  Aspect: {
+    screenName: 'Actor',
+    blocksPath: true
+  },
+  Life: {},
+  Examinable: {}
+};
 // Player template
 Blueprints.PlayerTemplate = {
   inherits: 'Actor',
@@ -140,6 +153,26 @@ Blueprints.KoboldTemplate = {
   },
   Destructible: {
     maxHp: 6
+  },
+  Attacker: {
+    attackValue: 4
+  },
+  Sight: {
+    sightRadius: 5
+  }
+};
+
+Blueprints.WitchTemplate = {
+  name: 'witch',
+  inherits: 'HunterActorTemplate',
+  Aspect: {
+    character: 'W',
+    foreground: 'blue',
+    screenName: 'Witch'
+  },
+  Destructible: {
+    maxHp: 5,
+    defenseValue: 3
   },
   Attacker: {
     attackValue: 4

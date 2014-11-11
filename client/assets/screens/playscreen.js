@@ -2,6 +2,7 @@ var Game = require('../game');
 var ROT = require('rot');
 var Singletons = require('../singletons');
 var Screen = require('./basescreen');
+var utils = require('../utils');
 
 var playScreen = new Screen('Play');
 
@@ -21,10 +22,17 @@ playScreen.enter = function () {
   var WorldBuilder = require('../worldbuilder');
 
   //Build our level
-  world = WorldBuilder.WorldBuilder.buildWorld({});
+  world = WorldBuilder.WorldBuilder.buildWorld(Game.config.world);
   // Create our player and set the position
   player = Singletons.Player;
-  world.getActiveLevel().addEntityAtRandomPosition(player);
+  var startPositions = world.getActiveLevel().queryEntities(utils.namedEntityFilters.entityNamed('StartingPosition'));
+
+  if (startPositions && startPositions.length) {
+    var startPosition = startPositions[0];
+    world.getActiveLevel().addEntityAtPosition(player, startPosition.getX(), startPosition.getY());
+  } else {
+    world.getActiveLevel().addEntityAtRandomPosition(player);
+  }
   world.getEngine().start();
 
   function tryanims() {

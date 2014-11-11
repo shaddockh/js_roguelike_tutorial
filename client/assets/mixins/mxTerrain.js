@@ -8,6 +8,7 @@ Mixins.Tile = {
     this._isDiggable = blueprint.isDiggable || false;
     this._isWalkable = blueprint.isWalkable || false;
     this._blocksLight = typeof (blueprint.blocksLight) !== 'undefined' ? blueprint.blocksLight : true;
+    this._reflectivity = blueprint.reflectivity || 0;
   },
   isWalkable: function () {
     return this._isWalkable;
@@ -20,6 +21,9 @@ Mixins.Tile = {
   },
   setBlocksLight: function (value) {
     this._blocksLight = value;
+  },
+  getReflectivity: function () {
+    return this._reflectivity;
   }
 };
 

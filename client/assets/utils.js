@@ -32,3 +32,29 @@ var geometry = {
 };
 
 module.exports.geometry = geometry;
+
+var namedEntityFilters = {
+  creatures: function (entity) {
+    return entity.hasMixin('actor');
+  },
+  items: function (entity) {
+    return entity.hasMixin('item');
+  },
+  entityNamed: function (name) {
+    name = name.toUpperCase();
+    return function (entity) {
+      return entity.getName().toUpperCase() === name;
+    };
+  },
+  hasMixin: function (mixinName) {
+    return function (entity) {
+      return entity.hasMixin(mixinName);
+    };
+  }
+};
+module.exports.namedEntityFilters = namedEntityFilters;
+
+var events = {
+  onEnteredLevel: 'onEnteredLevel'
+};
+module.exports.events = events;

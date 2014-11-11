@@ -72,7 +72,13 @@ ItemListScreen.prototype.render = function (display) {
         suffix = ' (wielding)';
       }
       // Render at the correct row and add 2.
-      display.drawText(0, 2 + row, letter + ' ' + selectionState + ' ' + this._items[i].describe() + suffix);
+      var fg = 'white',
+        bg = 'black';
+      if (this._selectedIndices[i]) {
+        fg = 'black';
+        bg = 'white';
+      }
+      display.drawText(0, 2 + row, letter + ' ' + selectionState + ' %c{' + fg + '}%b{' + bg + '} ' + this._items[i].describe() + suffix);
       row++;
     }
   }

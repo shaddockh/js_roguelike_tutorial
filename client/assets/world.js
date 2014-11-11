@@ -1,10 +1,13 @@
+var Dictionary = require('entity-blueprint-manager').Dictionary;
 var World = function () {
   var ROT = require('rot');
   //TODO: these should be passed in
   //this._scheduler = new ROT.Scheduler.Simple();
   this._scheduler = new ROT.Scheduler.Speed();
   this._engine = new ROT.Engine(this._scheduler);
-  this._levels = {};
+  this._levels = new Dictionary({
+    ignoreCase: true
+  });
   this._activeLevelId = null;
 };
 
@@ -20,8 +23,9 @@ World.prototype.setActiveLevel = function (levelId) {
   if (this._activeLevelId) {
     this.getActiveLevel().deactivate();
   }
-  this._activeLevelId = levelId;
-  this.getActiveLevel().activate(this.getScheduler());
+  var level = this.getLevelById(levelId);
+  this._activeLevelId = level.getLevelId();
+  level.activate(this.getScheduler());
 };
 
 World.prototype.getActiveLevelId = function () {
@@ -37,11 +41,11 @@ World.prototype.getActiveLevel = function () {
 
 World.prototype.getLevelById = function (levelId) {
 
-  return this._levels[levelId];
+  return this._levels.get(levelId);
 };
 
 World.prototype.addLevel = function (level) {
-  this._levels[level.getLevelId()] = level;
+  this._levels.add(level.getLevelId(), level);
 };
 
 module.exports = World;

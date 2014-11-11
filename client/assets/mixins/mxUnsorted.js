@@ -1,8 +1,9 @@
 // Create our Mixins namespace
-var Singletons = require('./../singletons');
-var Game = require('./../game');
-var Entity = require('./../entity');
-var Dictionary = require('entity-blueprint-manager').Dictionary;
+var Singletons = require('./../singletons'),
+  Game = require('./../game'),
+  Entity = require('./../entity'),
+  Dictionary = require('entity-blueprint-manager').Dictionary,
+  ROT = require('rot');
 
 var Mixins = {};
 
@@ -147,11 +148,13 @@ Mixins.Aspect = {
   },
   draw: function (display, x, y, options) {
     options = options || {};
+
     display.draw(
       x, y,
       this.getChar(),
       options.outsideFOV ? this.getObscuredForeground() : this.getForeground(),
-      this.getBackground()
+      //options.lightColor ? ROT.Color.multiply(this.getBackground() || [50,50,50], options.lightColor) : this.getBackground()
+      options.lightColor ? options.lightColor : this.getBackground()
     );
   },
   getChar: function () {
@@ -167,6 +170,7 @@ Mixins.Aspect = {
     return this._obscuredForeground;
   },
   getBackground: function () {
+    //TODO: need to convert to an RGB
     return this._background;
   },
   getScreenName: function () {
@@ -951,6 +955,25 @@ Mixins.Examinable = {
       }
     }
     return details.join(', ');
+  }
+};
+
+Mixins.Light = {
+  name: 'Light',
+  doc: 'A light',
+  init: function (blueprint) {
+    this._lightColor = blueprint.color || [255, 255, 255];
+  },
+  getLightColor: function () {
+    return this._lightColor;
+  },
+  listeners: {
+    onEnteredLevel: function (level) {
+      var lightingModel = level.getLightingModel();
+      if (lightingModel) {
+        lightingModel.setLight(this.getX(), this.getY(), this.getLightColor());
+      }
+    }
   }
 };
 

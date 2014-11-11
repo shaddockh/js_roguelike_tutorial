@@ -161,3 +161,14 @@ Tutorial 16
 * From: http://www.codingcookies.com/2013/11/25/building-a-roguelike-in-javascript-part-16/
 * implemented base tutorial.  Now to open up for bugfixes, etc.
 
+Fixes Post Tutorial 16
+====
+* Added a dependency on lo-dash for faster array manipulation
+* created a new terrain builder mixin that allows for hand drawing a level
+* work on implementing lights
+* renamed blueprint files to bp*.js
+* renamed mxin files to mx*.js
+* moved builder blueprint files to a /builder subdirectory
+* moved builder mixin files to a /builder subdirectory
+* moved the world definition into it's own blueprint file
+* in gameconfig.js you can now specify which world blueprint to load
