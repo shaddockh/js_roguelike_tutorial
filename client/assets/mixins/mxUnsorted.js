@@ -145,17 +145,21 @@ Mixins.Aspect = {
     this._screenName = blueprint.screenName;
     this._blocksPath = blueprint.blocksPath || false;
     this._renderLayer = blueprint.renderLayer || 0;
+    this._displayOutsideFov = blueprint.displayOutsideFov || false;
   },
   draw: function (display, x, y, options) {
     options = options || {};
-
-    display.draw(
-      x, y,
-      this.getChar(),
-      options.outsideFOV ? this.getObscuredForeground() : this.getForeground(),
-      //options.lightColor ? ROT.Color.multiply(this.getBackground() || [50,50,50], options.lightColor) : this.getBackground()
-      options.lightColor ? options.lightColor : this.getBackground()
-    );
+    if (this.getForeground() || this.getBackground()) {
+      display.draw(
+        x, y,
+        this.getChar(),
+        //options.outsideFOV ? this.getObscuredForeground() : this.getForeground(),
+        options.lightColor ? ROT.Color.toRGB(ROT.Color.multiply(ROT.Color.fromString(this.getForeground()), options.lightColor)) : this.getForeground(),
+        //options.lightColor ? ROT.Color.multiply(this.getBackground() || [50,50,50], options.lightColor) : this.getBackground()
+        //options.lightColor ? options.lightColor : this.getBackground()
+        this.getBackground()
+      );
+    }
   },
   getChar: function () {
     return this._character;
@@ -168,6 +172,9 @@ Mixins.Aspect = {
   },
   getObscuredForeground: function () {
     return this._obscuredForeground;
+  },
+  getDisplayOutsideFov: function () {
+    return this._displayOutsideFov;
   },
   getBackground: function () {
     //TODO: need to convert to an RGB

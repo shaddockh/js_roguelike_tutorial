@@ -96,6 +96,8 @@ Level.prototype.drawViewPort = function (display, x1, y1, x2, y2) {
       if (entity.hasMixin('aspect')) {
         if (visibleCells[entity.getX() + ',' + entity.getY()]) {
           return true;
+        } else if (entity.getDisplayOutsideFov() && level.isExplored(entity.getX(), entity.getY())) {
+          return true;
         }
       }
     }
@@ -106,7 +108,9 @@ Level.prototype.drawViewPort = function (display, x1, y1, x2, y2) {
   });
 
   _.forEach(entities, function (entity) {
-    entity.draw(display, entity.getX() - x1, entity.getY() - y1);
+    entity.draw(display, entity.getX() - x1, entity.getY() - y1, {
+      lightColor: level.getLightingModel().getColorAtCoord(entity.getX(), entity.getY())
+    });
   });
 };
 

@@ -61,7 +61,9 @@ Blueprints.TownLevel01 = {
     levelId: 'TownLevel01'
   },
   FovBuilder: {},
-  Lighting: {},
+  Lighting: {
+    ambientLight: [130, 130, 130]
+  },
   MapTerrainBuilder: {
     levelData: [
       '############################################',
@@ -78,7 +80,7 @@ Blueprints.TownLevel01 = {
       '#..........................................#',
       '#..........................................#',
       '#..........................................#',
-      '#..........................................#',
+      '#.............................T...T........#',
       '###############################...##########',
       '###############################...##########',
       '#####....######################...##########',
@@ -96,28 +98,13 @@ Blueprints.TownLevel01 = {
     //'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ`~1234567890-=!@#$%^&*()_+[]{}|;:",./<>?',
     //92 unique glyphs to handle this
     legend: {
-      '#': {
-        tile: 'wallTile'
-      },
-      '|': {
-        tile: 'floorTile',
-        entity: ['knifeofslicing']
-      },
-      'k': {
-        tile: 'floorTile',
-        entity: ['kobold']
-      },
-      'W': {
-        tile: 'floorTile',
-        entity: ['witch']
-      },
-      '.': {
-        tile: 'floorTile'
-      },
-      'F': {
-        tile: 'floorTile',
-        entity: ['FungusTemplate']
-      },
+      '#': 'WallTile',
+      '.': 'FloorTile',
+      '|': 'KnifeOfSlicing',
+      'k': 'Kobold',
+      'W': 'Witch',
+      'F': 'FungusTemplate',
+      'T': 'Sconce',
       '<': {
         tile: 'stairsDownTile',
         entity: ['StairsPortal']
@@ -126,8 +113,30 @@ Blueprints.TownLevel01 = {
         tile: 'floorTile',
         entity: ['StartingPosition', 'BlueLight']
       }
+      /*
+      '2': {
+      tile: 'stairsDownTile',
+      entity: [ {
+                inherits: 'StairsPortal',
+                Portal: {
+                  destinationLevel: 'level2',
+                  position: [23,45]
+                }
+                }
+              ]
+        },
+
+        '3': ['stairsDownTile',{
+                   inherits: 'StairsPortal',
+                   Portal: {
+                     destinationLevel: 'level2',
+                     position: [23,45]
+                   }
+              }]
+
+       */
     },
-    defaultTile: 'nullTile'
+    defaultTile: 'floorTile'
   }
 };
 /* need to figure out a way to have a map builder assemble multiple levels together */

@@ -17,7 +17,8 @@ Blueprints.Bloodstain = {
     character: '.',
     foreground: 'red',
     background: 'black',
-    screenName: 'blood'
+    screenName: 'blood',
+    displayOutsideFov: true
   }
 };
 
@@ -42,7 +43,12 @@ Blueprints.BlueLight = {
     color: [0, 0, 255]
   }
 };
-
+Blueprints.StaticObject = {
+  inherits: '_base',
+  name: 'StaticObject',
+  position: {},
+  Aspect: {}
+};
 Blueprints.StartingPosition = {
   inherits: 'gizmo',
   name: 'StartingPosition'

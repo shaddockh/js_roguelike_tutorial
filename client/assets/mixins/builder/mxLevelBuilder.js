@@ -270,6 +270,41 @@ Mixins.MapTerrainBuilder = {
     this._legend = blueprint.legend || {};
     this._defaultTile = blueprint.defaultTile || 'nullTile';
   },
+  /**
+   * location info can be of the format:
+   *   '#': 'tilename'  or 'entityname'
+   * or
+   *   '#': { tile: 'tilename', entity: ['entityname','entity2name'] }
+   *
+   * @param locationInfo
+   * @param x
+   * @param y
+   * @param tiles
+   * @param TileCatalog
+   * @param entities
+   */
+  buildTerrainLocation: function (locationInfo, x, y, tiles, TileCatalog, entities) {
+    var entity = null;
+    if (typeof (locationInfo) === 'string') {
+      if (TileCatalog.containsKey(locationInfo)) {
+        tiles[x][y] = TileCatalog.get(locationInfo);
+      } else {
+        tiles[x][y] = TileCatalog.get(this._defaultTile);
+        entity = new Entity(locationInfo);
+        entity.setPosition(x, y);
+        entities.push(entity);
+      }
+    } else {
+      tiles[x][y] = TileCatalog.get(locationInfo.tile);
+      if (locationInfo.entity && locationInfo.entity.length) {
+        for (var e = 0; e < locationInfo.entity.length; e++) {
+          entity = new Entity(locationInfo.entity[e]);
+          entity.setPosition(x, y);
+          entities.push(entity);
+        }
+      }
+    }
+  },
   buildTerrain: function () {
 
     var width = this.getWidth(),
@@ -278,21 +313,13 @@ Mixins.MapTerrainBuilder = {
     var TileCatalog = Singletons.TileCatalog;
     var entities = [];
     // First we create an array, filling it with empty tiles.
-    var tiles = WorldBuilder.build2DArray(width, height, TileCatalog.get(this._defaultTile));
+    var tiles = WorldBuilder.build2DArray(width, height, TileCatalog.get('NullTile'));
     var levelData = this._levelData;
     for (var y = 0; y < levelData.length; y++) {
       var row = levelData[y];
       for (var x = 0; x < row.length; x++) {
         var c = row.charAt(x);
-        var legendData = this._legend[c];
-        tiles[x][y] = TileCatalog.get(legendData.tile);
-        if (legendData.entity && legendData.entity.length) {
-          for (var e = 0; e < legendData.entity.length; e++) {
-            var entity = new Entity(legendData.entity[e]);
-            entity.setPosition(x, y);
-            entities.push(entity);
-          }
-        }
+        this.buildTerrainLocation(this._legend[c], x, y, tiles, TileCatalog, entities);
       }
     }
     this.setLevel(new Level(tiles, this.getLevelId(), entities));

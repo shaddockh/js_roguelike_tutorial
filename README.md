@@ -172,3 +172,5 @@ Fixes Post Tutorial 16
 * moved builder mixin files to a /builder subdirectory
 * moved the world definition into it's own blueprint file
 * in gameconfig.js you can now specify which world blueprint to load
+* implemented aspect.displayOutsideFov to allow items to stay rendered outside the field of view once they've been discovered (ie, terrain type objects)
+

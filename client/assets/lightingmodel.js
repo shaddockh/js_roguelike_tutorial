@@ -51,7 +51,7 @@ LightingModel.prototype.getColorAtCoord = function (x, y) {
   if (id in lightData) { /* add light from our computation */
     light = ROT.Color.add(light, lightData[id]);
   }
-  return ROT.Color.toRGB(light);
+  return light;
 };
 
 module.exports = LightingModel;
