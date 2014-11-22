@@ -1,4 +1,6 @@
 var Blueprints = {};
+var eventMessage = require('../utils').events;
+
 //////////////////////////////////////
 // BASE EQUIPMENT
 Blueprints.Equipment = {
@@ -28,6 +30,30 @@ Blueprints.Wearable = {
 Blueprints.Weapon = {
   inherits: 'Wieldable',
   name: 'Weapon'
+};
+
+Blueprints.Torch = {
+  inherits: 'Weapon',
+  name: 'torch',
+  Aspect: {
+    character: 'i',
+    foreground: 'yellow',
+    screenName: 'Torch'
+  },
+  Equippable: {
+    attackValue: 2,
+    //TODO: implement equip slots
+    equipSlot: 'shieldHand'
+  },
+  ExpirableItem: {
+    duration: 100,
+    expiredName: 'Burnt out torch',
+    nonExpiredName: 'Torch (%s turns left)'
+  },
+  EventRouter: {
+    onEquip: eventMessage.onActivate,
+    onUnequip: eventMessage.onDeactivate
+  }
 };
 
 Blueprints.dagger = {

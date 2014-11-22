@@ -170,6 +170,16 @@ playScreen.showInventory = function () {
   playScreen.showItemsSubScreen('InventoryScreen', player.getItems(), 'You are not carrying anything.');
 };
 
+playScreen.showActionScreen = function (actions, title) {
+  var subScreen = Singletons.ScreenCatalog.getScreen('DoActionScreen');
+  if (actions && subScreen.setup(player, actions, title) > 0) {
+    playScreen.setSubScreen(subScreen);
+  } else {
+    Game.sendMessage(player, 'No Actions To Perform');
+    Game.refresh();
+  }
+};
+
 playScreen.showLookScreen = function () {
   // Setup the look screen.
   var offsets = playScreen.getScreenOffsets();
@@ -282,27 +292,27 @@ playScreen.handleInput = function (inputType, inputData) {
     case ROT.VK_I:
       playScreen.showInventory();
       return;
-    case ROT.VK_D:
-      playScreen.dropItem();
-      return;
+      //case ROT.VK_D:
+      // playScreen.dropItem();
+      //return;
     case ROT.VK_COMMA:
       playScreen.pickupItem();
       break;
-    case ROT.VK_E:
+      //case ROT.VK_E:
       // Show the eat screen
-      playScreen.eatItem();
-      return;
-    case ROT.VK_X:
+      //playScreen.eatItem();
+      //return;
+      //case ROT.VK_X:
       //show the examine screen
-      playScreen.showExamineScreen();
-      return;
-    case ROT.VK_W:
-      if (inputData.shiftKey) {
-        playScreen.showWearScreen();
-      } else {
-        playScreen.showWieldScreen();
-      }
-      return;
+      //playScreen.showExamineScreen();
+      //return;
+      //case ROT.VK_W:
+      //if (inputData.shiftKey) {
+      //playScreen.showWearScreen();
+      //} else {
+      //playScreen.showWieldScreen();
+      //}
+      //return;
 
     default:
       //not a valid key

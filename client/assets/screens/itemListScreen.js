@@ -1,5 +1,6 @@
 var ROT = require('rot');
 var Singletons = require('../singletons');
+var Game = require('../game');
 
 function ItemListScreen(options) {
   options = options || {};
@@ -18,6 +19,10 @@ function ItemListScreen(options) {
   //the play screen
   this._parentScreen = options.parentScreen;
   this._hasNoItemOption = options.hasNoItemOption || false;
+  this._autoCloseOnSelect = typeof (options.autoCloseOnSelect) === 'undefined' ? true : options.autoCloseOnSelect;
+  this._selectFunction = options.selectFunction || null;
+  this._postRenderFunction = options.postRenderFunction || null;
+  this._postSetupFunction = options.postSetupFunction || null;
 }
 
 ItemListScreen.prototype.getParentScreen = function () {
@@ -42,6 +47,9 @@ ItemListScreen.prototype.setup = function (player, items) {
   });
   // Clean set of selected indices
   this._selectedIndices = {};
+  if (this._postSetupFunction) {
+    this._postSetupFunction();
+  }
   return count;
 };
 
@@ -58,6 +66,8 @@ ItemListScreen.prototype.render = function (display) {
     if (this._items[i]) {
       // Get the letter matching the item's index
       var letter = letters.substring(i, i + 1);
+
+      var isSelected = (this._canSelectItem && this._selectedIndices[i]);
       // If we have selected an item, show a +, else show a dash between
       // the letter and the item's name.
       var selectionState = (this._canSelectItem && this._canSelectMultipleItems &&
@@ -72,15 +82,15 @@ ItemListScreen.prototype.render = function (display) {
         suffix = ' (wielding)';
       }
       // Render at the correct row and add 2.
-      var fg = 'white',
-        bg = 'black';
-      if (this._selectedIndices[i]) {
-        fg = 'black';
-        bg = 'white';
-      }
+      var fg = isSelected ? 'black' : 'white',
+        bg = isSelected ? 'white' : 'black';
+
       display.drawText(0, 2 + row, letter + ' ' + selectionState + ' %c{' + fg + '}%b{' + bg + '} ' + this._items[i].describe() + suffix);
       row++;
     }
+  }
+  if (this._postRenderFunction) {
+    this._postRenderFunction(display);
   }
 };
 
@@ -92,9 +102,16 @@ ItemListScreen.prototype.executeOkFunction = function () {
   }
   // Switch back to the play screen.
   this.getParentScreen().setSubScreen(undefined);
+
   // Call the OK function and end the player's turn if it return true.
-  if (this._okFunction(selectedItems)) {
+  if (this._okFunction && this._okFunction(selectedItems)) {
     this.getParentScreen().endTurn();
+  }
+};
+
+ItemListScreen.prototype.executeSelectFunction = function (currentSelectedItem) {
+  if (this._selectFunction) {
+    this._selectFunction(currentSelectedItem);
   }
 };
 
@@ -129,11 +146,16 @@ ItemListScreen.prototype.handleInput = function (inputType, inputData) {
             this._selectedIndices[index] = true;
           }
           // Redraw screen
-          var Game = require('../game');
           Game.refresh();
         } else {
+          this._selectedIndices = {};
           this._selectedIndices[index] = true;
-          this.executeOkFunction();
+          this.executeSelectFunction(this._items[index], index);
+          if (this._autoCloseOnSelect) {
+            this.executeOkFunction();
+          } else {
+            Game.refresh();
+          }
         }
       }
     }

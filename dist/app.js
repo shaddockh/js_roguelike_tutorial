@@ -16580,7 +16580,7 @@ if (module && module.exports) { module.exports.ROT = ROT;}
   });
 })();
 
-},{"./../bower_components/bootstrap/dist/js/bootstrap.js":1,"./../bower_components/jquery/dist/jquery.js":2,"./assets/game":15,"./dashboard/dashboardcontroller":51}],5:[function(require,module,exports){
+},{"./../bower_components/bootstrap/dist/js/bootstrap.js":1,"./../bower_components/jquery/dist/jquery.js":2,"./assets/game":15,"./dashboard/dashboardcontroller":52}],5:[function(require,module,exports){
 module.exports = [
   require('./builder/bpLevelBuilder'),
   require('./builder/bpWorldDefinition'),
@@ -16853,6 +16853,8 @@ module.exports = Blueprints;
 
 },{}],8:[function(require,module,exports){
 var Blueprints = {};
+var eventMessage = require('../utils').events;
+
 //////////////////////////////////////
 // BASE EQUIPMENT
 Blueprints.Equipment = {
@@ -16882,6 +16884,30 @@ Blueprints.Wearable = {
 Blueprints.Weapon = {
   inherits: 'Wieldable',
   name: 'Weapon'
+};
+
+Blueprints.Torch = {
+  inherits: 'Weapon',
+  name: 'torch',
+  Aspect: {
+    character: 'i',
+    foreground: 'yellow',
+    screenName: 'Torch'
+  },
+  Equippable: {
+    attackValue: 2,
+    //TODO: implement equip slots
+    equipSlot: 'shieldHand'
+  },
+  ExpirableItem: {
+    duration: 100,
+    expiredName: 'Burnt out torch',
+    nonExpiredName: 'Torch (%s turns left)'
+  },
+  EventRouter: {
+    onEquip: eventMessage.onActivate,
+    onUnequip: eventMessage.onDeactivate
+  }
 };
 
 Blueprints.dagger = {
@@ -16984,7 +17010,7 @@ Blueprints.platemail = {
 
 module.exports = Blueprints;
 
-},{}],9:[function(require,module,exports){
+},{"../utils":48}],9:[function(require,module,exports){
 var Blueprints = Blueprints || {};
 Blueprints.Item = {
   inherits: '_base',
@@ -17317,11 +17343,11 @@ Blueprints.TownLevel01 = {
       '#..........................................#',
       '#...................................k......#',
       '#......F...................................#',
+      '#..........................T...............#',
       '#..........................................#',
       '#..........................................#',
       '#..........................................#',
-      '#..........................................#',
-      '#.............................T...T........#',
+      '#.............................^...^........#',
       '###############################...##########',
       '###############################...##########',
       '#####....######################...##########',
@@ -17345,7 +17371,8 @@ Blueprints.TownLevel01 = {
       'k': 'Kobold',
       'W': 'Witch',
       'F': 'FungusTemplate',
-      'T': 'Sconce',
+      '^': 'Sconce',
+      'T': 'Torch',
       '<': {
         tile: 'stairsDownTile',
         entity: ['StairsPortal']
@@ -17475,6 +17502,7 @@ module.exports = Blueprints;
 },{}],14:[function(require,module,exports){
 var Singletons = require('./singletons');
 var Dictionary = require('entity-blueprint-manager').Dictionary;
+var eventMessage = require('./utils').events;
 
 /**
  *
@@ -17529,7 +17557,7 @@ Entity.prototype._loadBlueprint = function (blueprint, blueprintOverrides) {
       this.attachMixin(componentKey, blueprint[componentKey]);
     }
   }
-  this.raiseEvent('onLoaded');
+  this.raiseEvent(eventMessage.onLoaded);
 };
 
 Entity.prototype.attachMixin = function (mixin, blueprint) {
@@ -17580,23 +17608,36 @@ Entity.prototype.attachMixin = function (mixin, blueprint) {
   // Add all of our listeners
   if (mixin.listeners) {
     for (var listenerKey in mixin.listeners) {
-      // If we don't already have a key for this event in our listeners
-      // array, add it.
-      var listenerArray;
-      if (!this._listeners.containsKey(listenerKey)) {
-        listenerArray = [];
-        this._listeners.add(listenerKey, listenerArray);
-      } else {
-        listenerArray = this._listeners.get(listenerKey);
-      }
-      // Add the listener.
-      listenerArray.push(mixin.listeners[listenerKey]);
+      this.addListener(listenerKey, mixin.listeners[listenerKey]);
     }
   }
 
   // Finally call the init function if there is one
   if (mixin.init) {
     mixin.init.call(this, blueprint, mixin, Singletons.MixinCatalog);
+  }
+};
+
+/**
+ * Add an event handler for a specific event
+ * @param eventName
+ * @param eventHandler
+ */
+Entity.prototype.addListener = function (eventName, eventHandler) {
+  // If we don't already have a key for this event in our listeners
+  // array, add it.
+  var listenerArray;
+  if (!this._listeners.containsKey(eventName)) {
+    listenerArray = [];
+    this._listeners.add(eventName, listenerArray);
+  } else {
+    listenerArray = this._listeners.get(eventName);
+  }
+  // Add the listener.
+  listenerArray.push(eventHandler);
+
+  if (!eventMessage[eventName]) {
+    console.error('Warning: listener ' + eventName + ' being bound by ' + this._name + ' is not a standard event.');
   }
 };
 
@@ -17631,7 +17672,7 @@ Entity.prototype.raiseEvent = function (event) {
 
 module.exports = Entity;
 
-},{"./singletons":45,"entity-blueprint-manager":53}],15:[function(require,module,exports){
+},{"./singletons":46,"./utils":48,"entity-blueprint-manager":54}],15:[function(require,module,exports){
 /*global $*/
 
 //NOTE: This is a singleton
@@ -17768,7 +17809,7 @@ Game.getNeighborPositions = function (x, y) {
 
 module.exports = Game;
 
-},{"./gameconfig":16,"./singletons":45,"rot":3,"sprintf-js":58}],16:[function(require,module,exports){
+},{"./gameconfig":16,"./singletons":46,"rot":3,"sprintf-js":59}],16:[function(require,module,exports){
 module.exports = {
   screenWidth: 80,
   screenHeight: 24,
@@ -17780,7 +17821,8 @@ var Singletons = require('./singletons'),
   WorldBuilder = require('./worldbuilder'),
   ROT = require('rot'),
   utils = require('./utils'),
-  _ = require('lodash');
+  _ = require('lodash'),
+  eventMessage = utils.events;
 
 //Correponds to "World" in the other tutorial
 
@@ -17840,9 +17882,15 @@ Level.prototype.deactivate = function () {
 
 Level.prototype.drawViewPort = function (display, x1, y1, x2, y2) {
 
+  console.time('Draw Viewport');
   // This object will keep track of all visible map cells
+
   var visibleCells = {};
   var level = this;
+
+  if (level.getLightingModel()) {
+    level.getLightingModel().reset();
+  }
   // Find all visible cells and update the object
   this.getFov().compute(
     Singletons.Player.getX(), Singletons.Player.getY(),
@@ -17890,6 +17938,7 @@ Level.prototype.drawViewPort = function (display, x1, y1, x2, y2) {
       lightColor: level.getLightingModel().getColorAtCoord(entity.getX(), entity.getY())
     });
   });
+  console.timeEnd('Draw Viewport');
 };
 
 Level.prototype.getEntities = function () {
@@ -18058,7 +18107,7 @@ Level.prototype.addEntity = function (entity) {
   // Add the entity to the list of entities
   this._entities.push(entity);
 
-  entity.raiseEvent(utils.events.onEnteredLevel, this);
+  entity.raiseEvent(eventMessage.onEnteredLevel, this);
   // Check if this entity is an actor, and if so add
   // them to the scheduler
   if (this.isActiveLevel()) {
@@ -18122,11 +18171,15 @@ Level.prototype.isExplored = function (x, y) {
 
 module.exports = Level;
 
-},{"./singletons":45,"./utils":47,"./worldbuilder":49,"lodash":57,"rot":3}],18:[function(require,module,exports){
+},{"./singletons":46,"./utils":48,"./worldbuilder":50,"lodash":58,"rot":3}],18:[function(require,module,exports){
 var ROT = require('rot');
 
 var LightingModel = function (lighting) {
   this._lighting = lighting;
+  this._dirty = true;
+};
+
+LightingModel.prototype.reset = function () {
   this._dirty = true;
 };
 
@@ -18145,20 +18198,21 @@ LightingModel.prototype.getAmbientLight = function () {
 };
 
 LightingModel.prototype.setLight = function (x, y, color) {
-  console.log('setting light: ', x, y, color);
-  this._lighting.setLight(x, y, color);
-  this._dirty = true;
+  if (this._lighting) {
+    this._lighting.setLight(x, y, color);
+    this._dirty = true;
+  }
 };
 
 LightingModel.prototype.compute = function () {
-  if (this._dirty) {
+  if (this._dirty && this._lighting) {
+    this._lighting.reset();
     var lightData = {};
     var lightingCallback = function (x, y, color) {
       lightData[x + "," + y] = color;
     };
     this._lighting.compute(lightingCallback);
     this._lightData = lightData;
-    console.log(lightData);
     this._dirty = false;
   }
 };
@@ -18620,7 +18674,7 @@ Mixins.UniformTerrainBuilder = {
 
 module.exports = Mixins;
 
-},{"../../entity":14,"../../game":15,"../../level":17,"../../lightingmodel":18,"../../singletons":45,"../../utils":47,"../../worldbuilder":49,"lodash":57,"rot":3}],21:[function(require,module,exports){
+},{"../../entity":14,"../../game":15,"../../level":17,"../../lightingmodel":18,"../../singletons":46,"../../utils":48,"../../worldbuilder":50,"lodash":58,"rot":3}],21:[function(require,module,exports){
 var Mixins = {},
   Singletons = require('../singletons'),
   Game = require('../game'),
@@ -18917,8 +18971,12 @@ Mixins.AiTaskGrowArm = {
 
 module.exports = Mixins;
 
-},{"../entity":14,"../game":15,"../singletons":45,"entity-blueprint-manager":53,"rot":3}],22:[function(require,module,exports){
+},{"../entity":14,"../game":15,"../singletons":46,"entity-blueprint-manager":54,"rot":3}],22:[function(require,module,exports){
 var ItemMixins = {};
+
+var utils = require('../utils'),
+  eventMessage = utils.events;
+var vsprintf = require('sprintf-js').vsprintf;
 
 // Edible mixins
 ItemMixins.Edible = {
@@ -18944,7 +19002,15 @@ ItemMixins.Edible = {
         key: 'food',
         value: this._foodValue
       }];
+    },
+    onRequestVerbs: function () {
+      return [{
+        verb: 'Eat',
+        action: this.eat,
+        owner: this
+      }];
     }
+
   },
   eat: function (entity) {
     if (entity.hasMixin('FoodConsumer')) {
@@ -18971,6 +19037,7 @@ ItemMixins.Equippable = {
     this._defenseValue = blueprint.defenseValue || 0;
     this._wieldable = blueprint.wieldable || false;
     this._wearable = blueprint.wearable || false;
+    this._equipSlot = blueprint.equipSlot || 'any';
   },
   listeners: {
     details: function () {
@@ -18988,6 +19055,39 @@ ItemMixins.Equippable = {
         });
       }
       return results;
+    },
+    onRequestVerbs: function (owner) {
+      var results = [];
+      if (owner.hasMixin('EquipSlots')) {
+        if (owner.isEquipped(this)) {
+          if (owner.canUnequip(this)) {
+            results.push({
+              verb: 'Unequip',
+              action: this.unequip,
+              owner: this
+            });
+          }
+        } else {
+          if (owner.canEquip(this)) {
+            results.push({
+              verb: 'Equip',
+              action: this.equip,
+              owner: this
+            });
+          }
+        }
+      }
+      return results;
+    }
+  },
+  equip: function (owner) {
+    if (owner.hasMixin('EquipSlots') && owner.canEquip(this)) {
+      owner.equip(this);
+    }
+  },
+  unequip: function (owner) {
+    if (owner.hasMixin('EquipSlots') && owner.canUnequip(this)) {
+      owner.unequip(this);
     }
   },
   getAttackValue: function () {
@@ -19004,9 +19104,106 @@ ItemMixins.Equippable = {
   }
 };
 
+ItemMixins.ExpirableItem = {
+
+  name: 'ExpirableItem',
+  doc: 'Will expire after so many turns',
+  init: function (blueprint) {
+    this._expirationDuration = blueprint.expirationDuration || 100;
+    this._expiredName = blueprint.expiredName || 'Expired Item';
+    this._nonExpiredName = blueprint.nonExpiredName || '%s turns left';
+    this._expirableItemActive = false;
+  },
+  expireItem: function () {
+    this.setScreenName(this._expiredName);
+  },
+  listeners: {
+    onLoaded: function () {
+      this.setScreenName(vsprintf(this._nonExpiredName, [this._expirationDuration]));
+    },
+    onActivate: function () {
+      this._expirableItemActive = true;
+      console.log('activated ' + this.getScreenName());
+    },
+    onDeactivate: function () {
+      this._expirableItemActive = false;
+      console.log('deactivated ' + this.getScreenName());
+    },
+    onGameTurn: function () {
+      if (this._expirableItemActive) {
+        this._expirationDuration -= 1;
+        if (this._expirationDuration === 0) {
+          this.expireItem();
+          this.raiseEvent(eventMessage.onDeactivate);
+        } else {
+          this.setScreenName(vsprintf(this._nonExpiredName, [this._expirationDuration]));
+        }
+      }
+    }
+  }
+};
+
+/**
+ * The event router allows for re-routing one event to another event
+ *  usage:
+ *   EventRouter: {
+ *       eventToListenFor: eventToRaise,
+ *       eventToListenFor, eventToRaise
+ *   }
+ */
+ItemMixins.EventRouter = {
+  name: 'EventRouter',
+  doc: 'Reroute one event to another event',
+  init: function (blueprint) {
+
+    var entity = this;
+
+    function createRaiseEvent(targetEvent) {
+      return function () {
+        entity.raiseEvent(targetEvent);
+      };
+    }
+
+    blueprint = blueprint || {};
+    for (var eventName in blueprint) {
+      this.addListener(eventName, createRaiseEvent(blueprint[eventName]));
+    }
+  }
+};
+
+ItemMixins.Effect = {
+  name: 'Effect',
+  doc: 'Base mixin for handling an effect',
+  init: function (blueprint) {
+    blueprint = blueprint || {};
+    this._effectDuration = blueprint.duration || 1;
+  },
+  getEffectDuration: function () {
+    return this._effectDuration;
+  },
+  setEffectDuration: function (value) {
+    this._effectDuration = value;
+  },
+  updateEffect: function () {},
+  startEffect: function () {},
+  endEffect: function () {}
+};
+
+ItemMixins.EffectHandler = {
+  name: 'EffectHandler',
+  doc: 'Handles applying an effect',
+  init: function (blueprint) {
+    blueprint = blueprint || {};
+    this._effectName = blueprint.effectName || null;
+  },
+  applyEffect: function (targetEntity) {
+    //TODO: apply effect should instantiate a new version of effect and apply it to entity
+  }
+};
+
 module.exports = ItemMixins;
 
-},{}],23:[function(require,module,exports){
+},{"../utils":48,"sprintf-js":59}],23:[function(require,module,exports){
 var Mixins = {};
 Mixins.Tile = {
   name: 'Tile',
@@ -19044,7 +19241,9 @@ var Singletons = require('./../singletons'),
   Game = require('./../game'),
   Entity = require('./../entity'),
   Dictionary = require('entity-blueprint-manager').Dictionary,
-  ROT = require('rot');
+  ROT = require('rot'),
+  eventMessage = require('./../utils').events,
+  _ = require('lodash');
 
 var Mixins = {};
 
@@ -19386,7 +19585,7 @@ Mixins.Destructible = {
       if (this.hasMixin('Life')) {
         this.kill(attacker);
       } else {
-        this.raiseEvent('onDestroy');
+        this.raiseEvent(eventMessage.onDestroy);
         this.getMap().removeEntity(this);
       }
 
@@ -19620,6 +19819,7 @@ Mixins.InventoryHolder = {
     for (var i = 0; i < this._items.length; i++) {
       if (!this._items[i]) {
         this._items[i] = item;
+        this._items[i].raiseEvent(eventMessage.onPickupItem, this);
         return true;
       }
     }
@@ -19673,9 +19873,21 @@ Mixins.InventoryHolder = {
     return added === indices.length;
   },
   dropItem: function (i) {
+    var item;
+    if (typeof (i) === 'object') {
+      item = i;
+      i = _.indexOf(this._items, item);
+    } else {
+      item = this._items[i];
+    }
     // Drops an item to the current map tile
-    if (this._items[i]) {
-      this.getMap().addEntityAtPosition(this._items[i], this.getX(), this.getY());
+    if (item) {
+      var result = item.raiseEvent(eventMessage.onDropItem, this);
+      //Let's see if any of the onDropItem events sent back a false
+      if (_.contains(result, false)) {
+        return;
+      }
+      this.getMap().addEntityAtPosition(item, this.getX(), this.getY());
       this.removeItem(i);
     }
   }
@@ -19683,9 +19895,39 @@ Mixins.InventoryHolder = {
 
 Mixins.Item = {
   name: 'Item',
-  doc: 'Item ',
+  doc: 'Base Item Mixin',
   init: function (blueprint) {
-
+    this._isDroppable = typeof (blueprint.isDroppable) !== 'undefined' ? blueprint.isDroppable : true;
+  },
+  isDroppable: function () {
+    return this._isDroppable;
+  },
+  listeners: {
+    onPickupItem: function (owner) {
+      this._container = owner;
+    },
+    onDropItem: function (owner) {
+      if (this.isDroppable()) {
+        this._container = null;
+        return true;
+      } else {
+        return false;
+      }
+    },
+    onRequestVerbs: function (entity) {
+      var results = [];
+      var self = this;
+      if (this.isDroppable() && this._container) {
+        results.push({
+          verb: 'Drop',
+          owner: this,
+          action: function () {
+            self._container.dropItem(self);
+          }
+        });
+      }
+      return results;
+    }
   }
 };
 
@@ -19708,15 +19950,15 @@ Mixins.Life = {
     message = message || 'You have died!';
     Game.sendMessage(this, message);
 
-    this.raiseEvent('onDeath');
+    this.raiseEvent(eventMessage.onDeath);
     if (attacker) {
-      attacker.raiseEvent('onKill', this);
+      attacker.raiseEvent(eventMessage.onKill, this);
     }
     // Check if the player died, and if so call their act method to prompt the user.
     if (this.hasMixin('PlayerActor')) {
       this.act();
     } else {
-      this.raiseEvent('onDestroy');
+      this.raiseEvent(eventMessage.onDestroy);
       this.getMap().removeEntity(this);
     }
   }
@@ -19794,20 +20036,10 @@ Mixins.EquipSlots = {
   name: 'EquipSlots',
   doc: 'Allows an entity to equip items',
   init: function (blueprint) {
-    this._weapon = blueprint.weapon || null;
-    this._armor = blueprint.armor || null;
-  },
-  wield: function (item) {
-    this._weapon = item;
-  },
-  unwield: function () {
     this._weapon = null;
-  },
-  wear: function (item) {
-    this._armor = item;
-  },
-  takeOff: function () {
     this._armor = null;
+    this.equip(blueprint.weapon);
+    this.equip(blueprint.armor);
   },
   getWeapon: function () {
     return this._weapon;
@@ -19815,13 +20047,42 @@ Mixins.EquipSlots = {
   getArmor: function () {
     return this._armor;
   },
+  isEquipped: function (item) {
+    if (this._weapon === item || this._armor === item) {
+      return true;
+    } else {
+      return false;
+    }
+  },
+  isSlotEquipped: function (slotName) {
+    //TODO: implement isSlotEquipped
+  },
+  canEquip: function (item) {
+    return true;
+  },
+  canUnequip: function (item) {
+    return true;
+  },
+  //TODO: need an equup function
+  equip: function (item) {
+    if (item && item.isWieldable()) {
+      this.unequip(this._weapon);
+      this._weapon = item;
+      item.raiseEvent(eventMessage.onEquip, this);
+    } else if (item && item.isWearable()) {
+      this.unequip(this._armor);
+      this._armor = item;
+      item.raiseEvent(eventMessage.onEquip, this);
+    }
+  },
   unequip: function (item) {
     // Helper function to be called before getting rid of an item.
-    if (this._weapon === item) {
-      this.unwield();
-    }
-    if (this._armor === item) {
-      this.takeOff();
+    if (item && this._weapon === item) {
+      this._weapon = null;
+      item.raiseEvent(eventMessage.onUnequip, this);
+    } else if (item && this._armor === item) {
+      this._armor = null;
+      item.raiseEvent(eventMessage.onUnequip, this);
     }
   },
   getEquippedDefenseValue: function () {
@@ -19913,7 +20174,7 @@ Mixins.ExperienceGainer = {
     // Check if we gained at least one level.
     if (levelsGained > 0) {
       Game.sendMessage(this, "You advance to level %d.", [this._level]);
-      this.raiseEvent('onGainLevel');
+      this.raiseEvent(eventMessage.onGainLevel);
     }
   },
   listeners: {
@@ -19991,7 +20252,7 @@ Mixins.Examinable = {
   },
   examine: function () {
     var details = [];
-    var detailGroups = this.raiseEvent('details');
+    var detailGroups = this.raiseEvent(eventMessage.details);
     // Iterate through each return value, grabbing the details from the arrays.
     if (detailGroups) {
       for (var i = 0, l = detailGroups.length; i < l; i++) {
@@ -20027,7 +20288,7 @@ Mixins.Light = {
 
 module.exports = Mixins;
 
-},{"./../entity":14,"./../game":15,"./../singletons":45,"entity-blueprint-manager":53,"rot":3}],25:[function(require,module,exports){
+},{"./../entity":14,"./../game":15,"./../singletons":46,"./../utils":48,"entity-blueprint-manager":54,"lodash":58,"rot":3}],25:[function(require,module,exports){
 //Random number generator
 
 var ROT = require('rot');
@@ -20089,9 +20350,10 @@ var ScreenCatalog = (function () {
 
 module.exports = ScreenCatalog;
 
-},{"entity-blueprint-manager":53}],27:[function(require,module,exports){
+},{"entity-blueprint-manager":54}],27:[function(require,module,exports){
 module.exports = {
   'DropScreen': require('./dropscreen'),
+  'DoActionScreen': require('./doactionscreen'),
   'EatScreen': require('./eatscreen'),
   'ExamineScreen': require('./examinescreen'),
   'GainStatsScreen': require('./gainstatscreen'),
@@ -20107,7 +20369,7 @@ module.exports = {
   'WinScreen': require('./winscreen')
 };
 
-},{"./dropscreen":29,"./eatscreen":30,"./examinescreen":31,"./gainstatscreen":32,"./helpscreen":33,"./inventoryScreen":34,"./lookscreen":36,"./losescreen":37,"./pickupscreen":38,"./playscreen":39,"./startscreen":40,"./wearscreen":42,"./wieldscreen":43,"./winscreen":44}],28:[function(require,module,exports){
+},{"./doactionscreen":29,"./dropscreen":30,"./eatscreen":31,"./examinescreen":32,"./gainstatscreen":33,"./helpscreen":34,"./inventoryScreen":35,"./lookscreen":37,"./losescreen":38,"./pickupscreen":39,"./playscreen":40,"./startscreen":41,"./wearscreen":43,"./wieldscreen":44,"./winscreen":45}],28:[function(require,module,exports){
 var Singletons = require('../singletons');
 
 var Screen = function (name) {
@@ -20135,7 +20397,58 @@ Screen.prototype.setParentScreen = function (screenName) {
 
 module.exports = Screen;
 
-},{"../singletons":45}],29:[function(require,module,exports){
+},{"../singletons":46}],29:[function(require,module,exports){
+var Game = require('../game');
+var utils = require('../utils'),
+  eventMessage = utils.events;
+var _ = require('lodash');
+
+var ROT = require('rot');
+var Singletons = require('../singletons');
+var Screen = require('./basescreen');
+
+var doActionScreen = new Screen('Action to Perform');
+doActionScreen.setup = function (player, actions, title) {
+  // Must be called before rendering.
+  this._player = player;
+  this._options = actions;
+  this._title = title || 'Choose and action to perform: ';
+
+  return actions.length;
+};
+
+doActionScreen.render = function (display) {
+  var letters = 'abcdefghijklmnopqrstuvwxyz';
+  display.drawText(0, 0, this._title);
+
+  // Iterate through each of our options
+  for (var i = 0; i < this._options.length; i++) {
+    display.drawText(0, 2 + i,
+      letters.substring(i, i + 1) + ' - ' + this._options[i].verb);
+  }
+
+};
+
+doActionScreen.handleInput = function (inputType, inputData) {
+  if (inputType === 'keydown') {
+    // If a letter was pressed, check if it matches to a valid option.
+    if (inputData.keyCode >= ROT.VK_A && inputData.keyCode <= ROT.VK_Z) {
+      // Check if it maps to a valid item by subtracting 'a' from the character
+      // to know what letter of the alphabet we used.
+      var index = inputData.keyCode - ROT.VK_A;
+      var selectedAction = this._options[index];
+      if (selectedAction) {
+        // Call the action
+        selectedAction.action.call(selectedAction.owner, this._player);
+        Singletons.ScreenCatalog.getScreen('PlayScreen').setSubScreen(undefined);
+      }
+    }
+  }
+};
+
+module.exports = doActionScreen;
+
+},{"../game":15,"../singletons":46,"../utils":48,"./basescreen":28,"lodash":58,"rot":3}],30:[function(require,module,exports){
 var ItemListScreen = require('./itemListScreen');
 
 var dropScreen = new ItemListScreen({
@@ -20152,7 +20465,7 @@ var dropScreen = new ItemListScreen({
 
 module.exports = dropScreen;
 
-},{"./itemListScreen":35}],30:[function(require,module,exports){
+},{"./itemListScreen":36}],31:[function(require,module,exports){
 var ItemListScreen = require('./itemListScreen');
 var Game = require('../game');
 
@@ -20179,7 +20492,7 @@ var eatScreen = new ItemListScreen({
 
 module.exports = eatScreen;
 
-},{"../game":15,"./itemListScreen":35}],31:[function(require,module,exports){
+},{"../game":15,"./itemListScreen":36}],32:[function(require,module,exports){
 var ItemListScreen = require('./itemListScreen');
 
 var examineScreen = new ItemListScreen({
@@ -20214,7 +20527,7 @@ var examineScreen = new ItemListScreen({
 
 module.exports = examineScreen;
 
-},{"../game":15,"./itemListScreen":35}],32:[function(require,module,exports){
+},{"../game":15,"./itemListScreen":36}],33:[function(require,module,exports){
 var Game = require('../game');
 var ROT = require('rot');
 var Singletons = require('../singletons');
@@ -20267,7 +20580,7 @@ gainStatScreen.handleInput = function (inputType, inputData) {
 
 module.exports = gainStatScreen;
 
-},{"../game":15,"../singletons":45,"./basescreen":28,"rot":3}],33:[function(require,module,exports){
+},{"../game":15,"../singletons":46,"./basescreen":28,"rot":3}],34:[function(require,module,exports){
 var Screen = require('./basescreen');
 var Game = require('../game');
 
@@ -20283,12 +20596,17 @@ helpScreen.render = function (display) {
   display.drawText(0, y++, 'The villagers have been complaining of a terrible stench coming from the cave.');
   display.drawText(0, y++, 'Find the source of this smell and get rid of it!');
   y += 3;
+  display.drawText(0, y++, '[h or Left Arrow] to move left');
+  display.drawText(0, y++, '[l or Right Arrow] to move right');
+  display.drawText(0, y++, '[j or Down Arrow] to move down');
+  display.drawText(0, y++, '[k or Up Arrow] to move up');
   display.drawText(0, y++, '[,] to pick up items');
-  display.drawText(0, y++, '[d] to drop items');
-  display.drawText(0, y++, '[e] to eat items');
-  display.drawText(0, y++, '[w] to wield items');
-  display.drawText(0, y++, '[W] to wield items');
-  display.drawText(0, y++, '[x] to examine items');
+  //display.drawText(0, y++, '[d] to drop items');
+  //display.drawText(0, y++, '[e] to eat items');
+  //display.drawText(0, y++, '[w] to wield items');
+  //display.drawText(0, y++, '[W] to wield items');
+  //display.drawText(0, y++, '[x] to examine items');
+  display.drawText(0, y++, '[i] to view and manipulate your inventory');
   display.drawText(0, y++, '[;] to look around you');
   display.drawText(0, y++, '[?] to show this help screen');
   y += 3;
@@ -20303,19 +20621,87 @@ helpScreen.handleInput = function (inputType, inputData) {
 
 module.exports = helpScreen;
 
-},{"../game":15,"./basescreen":28}],34:[function(require,module,exports){
+},{"../game":15,"./basescreen":28}],35:[function(require,module,exports){
 var ItemListScreen = require('./itemListScreen');
+var Game = require('../game');
+var utils = require('../utils'),
+  eventMessage = utils.events;
+var _ = require('lodash');
+
 var inventoryScreen = new ItemListScreen({
   caption: 'Inventory',
-  canSelect: false,
-  parentScreen: 'PlayScreen'
+  canSelect: true,
+  parentScreen: 'PlayScreen',
+  autoCloseOnSelect: false,
+  selectFunction: function (item) {
+    this._currentHoverItem = item;
+  },
+  postSetupFunction: function () {
+    this._currentHoverItem = null;
+    if (this._items.length && !this._currentHoverItem) {
+      this._selectedIndices[0] = true;
+      this._currentHoverItem = this._items[0];
+    }
+  },
+  postRenderFunction: function (display) {
+    this.renderDescriptionArea(display);
+    this.renderActionArea(display);
+  },
+  ok: function (selectedItems) {
+    selectedItems = _.values(selectedItems);
+    if (selectedItems.length === 1) {
+      var verbs = _.flatten(selectedItems[0].raiseEvent(eventMessage.onRequestVerbs, this._player));
+      if (verbs.length) {
+        this.getParentScreen().showActionScreen(verbs, 'Choose an action to perform: ' + selectedItems[0].getScreenName());
+        return false;
+      }
+    } else if (selectedItems.length > 1) {
+      throw new Error('multiple item were selected!');
+    }
+    return false;
+  }
 });
+
+inventoryScreen.renderDescriptionArea = function (display) {
+  if (this._currentHoverItem) {
+    var item = this._currentHoverItem;
+    var msg = '';
+    if (item && (item.hasMixin('Examinable') || item.hasMixin('Aspect'))) {
+      if (item.hasMixin('Examinable')) {
+        msg = item.describeA(false);
+        msg += '\n' + item.examine();
+      } else {
+        msg = item.describeA(false);
+      }
+    }
+    display.drawText(50, 2, msg);
+  }
+  display.drawText(50, 2, '   ');
+};
+
+inventoryScreen.renderActionArea = function (display) {
+  if (this._currentHoverItem) {
+    var item = this._currentHoverItem;
+    var msg = '';
+    display.drawText(50, 20, 'Actions Available: ');
+    var verbs = _.flatten(item.raiseEvent(eventMessage.onRequestVerbs, this._player));
+    if (verbs.length) {
+      var actionList = _.map(verbs, function(verb) { return verb.verb;}).join(', ');
+      display.drawText(50, 21, actionList);
+    } else {
+      display.drawText(50, 21, 'None');
+    }
+  } else {
+    display.drawText(50, 21, 'None');
+  }
+};
 
 module.exports = inventoryScreen;
 
-},{"./itemListScreen":35}],35:[function(require,module,exports){
+},{"../game":15,"../utils":48,"./itemListScreen":36,"lodash":58}],36:[function(require,module,exports){
 var ROT = require('rot');
 var Singletons = require('../singletons');
+var Game = require('../game');
 
 function ItemListScreen(options) {
   options = options || {};
@@ -20334,6 +20720,10 @@ function ItemListScreen(options) {
   //the play screen
   this._parentScreen = options.parentScreen;
   this._hasNoItemOption = options.hasNoItemOption || false;
+  this._autoCloseOnSelect = typeof (options.autoCloseOnSelect) === 'undefined' ? true : options.autoCloseOnSelect;
+  this._selectFunction = options.selectFunction || null;
+  this._postRenderFunction = options.postRenderFunction || null;
+  this._postSetupFunction = options.postSetupFunction || null;
 }
 
 ItemListScreen.prototype.getParentScreen = function () {
@@ -20358,6 +20748,9 @@ ItemListScreen.prototype.setup = function (player, items) {
   });
   // Clean set of selected indices
   this._selectedIndices = {};
+  if (this._postSetupFunction) {
+    this._postSetupFunction();
+  }
   return count;
 };
 
@@ -20374,6 +20767,8 @@ ItemListScreen.prototype.render = function (display) {
     if (this._items[i]) {
       // Get the letter matching the item's index
       var letter = letters.substring(i, i + 1);
+
+      var isSelected = (this._canSelectItem && this._selectedIndices[i]);
       // If we have selected an item, show a +, else show a dash between
       // the letter and the item's name.
       var selectionState = (this._canSelectItem && this._canSelectMultipleItems &&
@@ -20388,15 +20783,15 @@ ItemListScreen.prototype.render = function (display) {
         suffix = ' (wielding)';
       }
       // Render at the correct row and add 2.
-      var fg = 'white',
-        bg = 'black';
-      if (this._selectedIndices[i]) {
-        fg = 'black';
-        bg = 'white';
-      }
+      var fg = isSelected ? 'black' : 'white',
+        bg = isSelected ? 'white' : 'black';
+
       display.drawText(0, 2 + row, letter + ' ' + selectionState + ' %c{' + fg + '}%b{' + bg + '} ' + this._items[i].describe() + suffix);
       row++;
     }
+  }
+  if (this._postRenderFunction) {
+    this._postRenderFunction(display);
   }
 };
 
@@ -20408,9 +20803,16 @@ ItemListScreen.prototype.executeOkFunction = function () {
   }
   // Switch back to the play screen.
   this.getParentScreen().setSubScreen(undefined);
+
   // Call the OK function and end the player's turn if it return true.
-  if (this._okFunction(selectedItems)) {
+  if (this._okFunction && this._okFunction(selectedItems)) {
     this.getParentScreen().endTurn();
+  }
+};
+
+ItemListScreen.prototype.executeSelectFunction = function (currentSelectedItem) {
+  if (this._selectFunction) {
+    this._selectFunction(currentSelectedItem);
   }
 };
 
@@ -20445,11 +20847,16 @@ ItemListScreen.prototype.handleInput = function (inputType, inputData) {
             this._selectedIndices[index] = true;
           }
           // Redraw screen
-          var Game = require('../game');
           Game.refresh();
         } else {
+          this._selectedIndices = {};
           this._selectedIndices[index] = true;
-          this.executeOkFunction();
+          this.executeSelectFunction(this._items[index], index);
+          if (this._autoCloseOnSelect) {
+            this.executeOkFunction();
+          } else {
+            Game.refresh();
+          }
         }
       }
     }
@@ -20458,7 +20865,7 @@ ItemListScreen.prototype.handleInput = function (inputType, inputData) {
 
 module.exports = ItemListScreen;
 
-},{"../game":15,"../singletons":45,"rot":3}],36:[function(require,module,exports){
+},{"../game":15,"../singletons":46,"rot":3}],37:[function(require,module,exports){
 var TargetBasedScreen = require('./targetbasedscreen');
 var Singletons = require('../singletons');
 var lookScreen = new TargetBasedScreen({
@@ -20515,7 +20922,7 @@ var lookScreen = new TargetBasedScreen({
 
 module.exports = lookScreen;
 
-},{"../singletons":45,"./targetbasedscreen":41}],37:[function(require,module,exports){
+},{"../singletons":46,"./targetbasedscreen":42}],38:[function(require,module,exports){
 var Screen = require('./basescreen');
 var loseScreen = new Screen('Lose');
 
@@ -20529,7 +20936,7 @@ loseScreen.render = function (display) {
 
 module.exports = loseScreen;
 
-},{"./basescreen":28}],38:[function(require,module,exports){
+},{"./basescreen":28}],39:[function(require,module,exports){
 var ItemListScreen = require('./itemListScreen');
 
 var pickupScreen = new ItemListScreen({
@@ -20549,7 +20956,7 @@ var pickupScreen = new ItemListScreen({
 });
 module.exports = pickupScreen;
 
-},{"../game":15,"./itemListScreen":35}],39:[function(require,module,exports){
+},{"../game":15,"./itemListScreen":36}],40:[function(require,module,exports){
 var Game = require('../game');
 var ROT = require('rot');
 var Singletons = require('../singletons');
@@ -20722,6 +21129,16 @@ playScreen.showInventory = function () {
   playScreen.showItemsSubScreen('InventoryScreen', player.getItems(), 'You are not carrying anything.');
 };
 
+playScreen.showActionScreen = function (actions, title) {
+  var subScreen = Singletons.ScreenCatalog.getScreen('DoActionScreen');
+  if (actions && subScreen.setup(player, actions, title) > 0) {
+    playScreen.setSubScreen(subScreen);
+  } else {
+    Game.sendMessage(player, 'No Actions To Perform');
+    Game.refresh();
+  }
+};
+
 playScreen.showLookScreen = function () {
   // Setup the look screen.
   var offsets = playScreen.getScreenOffsets();
@@ -20834,27 +21251,27 @@ playScreen.handleInput = function (inputType, inputData) {
     case ROT.VK_I:
       playScreen.showInventory();
       return;
-    case ROT.VK_D:
-      playScreen.dropItem();
-      return;
+      //case ROT.VK_D:
+      // playScreen.dropItem();
+      //return;
     case ROT.VK_COMMA:
       playScreen.pickupItem();
       break;
-    case ROT.VK_E:
+      //case ROT.VK_E:
       // Show the eat screen
-      playScreen.eatItem();
-      return;
-    case ROT.VK_X:
+      //playScreen.eatItem();
+      //return;
+      //case ROT.VK_X:
       //show the examine screen
-      playScreen.showExamineScreen();
-      return;
-    case ROT.VK_W:
-      if (inputData.shiftKey) {
-        playScreen.showWearScreen();
-      } else {
-        playScreen.showWieldScreen();
-      }
-      return;
+      //playScreen.showExamineScreen();
+      //return;
+      //case ROT.VK_W:
+      //if (inputData.shiftKey) {
+      //playScreen.showWearScreen();
+      //} else {
+      //playScreen.showWieldScreen();
+      //}
+      //return;
 
     default:
       //not a valid key
@@ -20886,7 +21303,7 @@ playScreen.endTurn = function () {
 
 module.exports = playScreen;
 
-},{"../entity":14,"../game":15,"../singletons":45,"../utils":47,"../worldbuilder":49,"./basescreen":28,"rot":3,"sprintf-js":58}],40:[function(require,module,exports){
+},{"../entity":14,"../game":15,"../singletons":46,"../utils":48,"../worldbuilder":50,"./basescreen":28,"rot":3,"sprintf-js":59}],41:[function(require,module,exports){
 var Game = require('../game');
 var ROT = require('rot');
 var gameconfig = require('../gameconfig');
@@ -20918,7 +21335,7 @@ startScreen.handleInput = function (inputType, inputData) {
 
 module.exports = startScreen;
 
-},{"../game":15,"../gameconfig":16,"../singletons":45,"./basescreen":28,"rot":3}],41:[function(require,module,exports){
+},{"../game":15,"../gameconfig":16,"../singletons":46,"./basescreen":28,"rot":3}],42:[function(require,module,exports){
 var ROT = require('rot');
 var Singletons = require('../singletons');
 var utils = require('../utils');
@@ -21029,7 +21446,7 @@ TargetBasedScreen.prototype.executeOkFunction = function () {
 
 module.exports = TargetBasedScreen;
 
-},{"../game":15,"../singletons":45,"../utils":47,"rot":3}],42:[function(require,module,exports){
+},{"../game":15,"../singletons":46,"../utils":48,"rot":3}],43:[function(require,module,exports){
 var ItemListScreen = require('./itemListScreen');
 
 var wearScreen = new ItemListScreen({
@@ -21062,7 +21479,7 @@ var wearScreen = new ItemListScreen({
 
 module.exports = wearScreen;
 
-},{"../game":15,"./itemListScreen":35}],43:[function(require,module,exports){
+},{"../game":15,"./itemListScreen":36}],44:[function(require,module,exports){
 var ItemListScreen = require('./itemListScreen');
 
 var wieldScreen = new ItemListScreen({
@@ -21078,15 +21495,20 @@ var wieldScreen = new ItemListScreen({
     var Game = require('../game');
     // Check if we selected 'no item'
     var keys = Object.keys(selectedItems);
+    var item = this._player.getWeapon();
     if (keys.length === 0) {
-      this._player.unwield();
+      if (item) {
+        this._player.unequip(item);
+      }
       Game.sendMessage(this._player, "You are empty handed.");
     } else {
+      if (item) {
+        this._player.unequip(item);
+      }
       // Make sure to unequip the item first in case it is the armor.
-      var item = selectedItems[keys[0]];
-      this._player.unequip(item);
-      this._player.wield(item);
-      Game.sendMessage(this._player, "You are wielding %s.", [item.describeA()]);
+      var newitem = selectedItems[keys[0]];
+      this._player.wield(newitem);
+      Game.sendMessage(this._player, "You are wielding %s.", [newitem.describeA()]);
     }
     return true;
   }
@@ -21094,7 +21516,7 @@ var wieldScreen = new ItemListScreen({
 
 module.exports = wieldScreen;
 
-},{"../game":15,"./itemListScreen":35}],44:[function(require,module,exports){
+},{"../game":15,"./itemListScreen":36}],45:[function(require,module,exports){
 var ROT = require('rot');
 
 var Screen = require('./basescreen');
@@ -21124,7 +21546,7 @@ winScreen.handleInput = function (inputType, inputData) {
 
 module.exports = winScreen;
 
-},{"./basescreen":28,"rot":3}],45:[function(require,module,exports){
+},{"./basescreen":28,"rot":3}],46:[function(require,module,exports){
 var entityBlueprintManager = require('entity-blueprint-manager');
 var MixinCatalog = new entityBlueprintManager.MixinCatalog();
 var BlueprintCatalog = new entityBlueprintManager.BlueprintCatalog();
@@ -21181,7 +21603,7 @@ module.exports.Player = null;
 module.exports.RNG = RNG;
 module.exports.initialize = initialize;
 
-},{"./blueprints/_blueprintIndex":5,"./entity":14,"./mixins/_mixinIndex":19,"./rng":25,"./screenCatalog":26,"./screens/_screenIndex":27,"./tileCatalog":46,"./world":48,"./worldbuilder":49,"entity-blueprint-manager":53}],46:[function(require,module,exports){
+},{"./blueprints/_blueprintIndex":5,"./entity":14,"./mixins/_mixinIndex":19,"./rng":25,"./screenCatalog":26,"./screens/_screenIndex":27,"./tileCatalog":47,"./world":49,"./worldbuilder":50,"entity-blueprint-manager":54}],47:[function(require,module,exports){
 var Dictionary = require('entity-blueprint-manager').Dictionary;
 
 var TileCatalog = (function () {
@@ -21193,7 +21615,7 @@ var TileCatalog = (function () {
 })();
 module.exports = TileCatalog;
 
-},{"entity-blueprint-manager":53}],47:[function(require,module,exports){
+},{"entity-blueprint-manager":54}],48:[function(require,module,exports){
 var geometry = {
   getLine: function (startX, startY, endX, endY) {
     var points = [];
@@ -21251,11 +21673,26 @@ var namedEntityFilters = {
 module.exports.namedEntityFilters = namedEntityFilters;
 
 var events = {
-  onEnteredLevel: 'onEnteredLevel'
+  onEnteredLevel: 'onEnteredLevel',
+  onActivate: 'onActivate',
+  onDeactivate: 'onDeactivate',
+  onEquip: 'onEquip',
+  onUnequip: 'onUnequip',
+  onGameTurn: 'onGameTurn',
+  onDestroy: 'onDestroy',
+  onDeath: 'onDeath',
+  onKill: 'onKill',
+  onGainLevel: 'onGainLevel',
+  details: 'details',
+  onRequestDetails: 'onRequestDetails',
+  onLoaded: 'onLoaded',
+  onRequestVerbs: 'onRequestVerbs',
+  onDropItem: 'onDropItem',
+  onPickupItem: 'onPickupItem'
 };
 module.exports.events = events;
 
-},{}],48:[function(require,module,exports){
+},{}],49:[function(require,module,exports){
 var Dictionary = require('entity-blueprint-manager').Dictionary;
 var World = function () {
   var ROT = require('rot');
@@ -21308,7 +21745,7 @@ World.prototype.addLevel = function (level) {
 
 module.exports = World;
 
-},{"entity-blueprint-manager":53,"rot":3}],49:[function(require,module,exports){
+},{"entity-blueprint-manager":54,"rot":3}],50:[function(require,module,exports){
 /*jshint bitwise: false*/
 var ROT = require('rot');
 var Level = require('./level');
@@ -21572,7 +22009,7 @@ var WorldBuilder = (function () {
 
 module.exports.WorldBuilder = WorldBuilder;
 
-},{"./entity":14,"./game":15,"./level":17,"./singletons":45,"entity-blueprint-manager":53,"rot":3}],50:[function(require,module,exports){
+},{"./entity":14,"./game":15,"./level":17,"./singletons":46,"entity-blueprint-manager":54,"rot":3}],51:[function(require,module,exports){
 var $ = require("./../../bower_components/jquery/dist/jquery.js");
 var Dictionary = require('entity-blueprint-manager').Dictionary;
 
@@ -21643,7 +22080,7 @@ BlueprintNavigator.prototype.buildTree = function ($ul, element) {
 
 module.exports = BlueprintNavigator;
 
-},{"./../../bower_components/jquery/dist/jquery.js":2,"entity-blueprint-manager":53}],51:[function(require,module,exports){
+},{"./../../bower_components/jquery/dist/jquery.js":2,"entity-blueprint-manager":54}],52:[function(require,module,exports){
 var $ = require("./../../bower_components/jquery/dist/jquery.js");
 var bootstrap = require("./../../bower_components/bootstrap/dist/js/bootstrap.js");
 
@@ -21664,7 +22101,7 @@ DashboardController.init = function () {
 
 module.exports = DashboardController;
 
-},{"../assets/singletons":45,"./../../bower_components/bootstrap/dist/js/bootstrap.js":1,"./../../bower_components/jquery/dist/jquery.js":2,"./blueprintnavcontroller":50,"./mixinnavcontroller":52}],52:[function(require,module,exports){
+},{"../assets/singletons":46,"./../../bower_components/bootstrap/dist/js/bootstrap.js":1,"./../../bower_components/jquery/dist/jquery.js":2,"./blueprintnavcontroller":51,"./mixinnavcontroller":53}],53:[function(require,module,exports){
 var $ = require("./../../bower_components/jquery/dist/jquery.js");
 var Dictionary = require('entity-blueprint-manager').Dictionary;
 
@@ -21765,11 +22202,11 @@ MixinNavigator.prototype.buildTree = function ($ul, element) {
 
 module.exports = MixinNavigator;
 
-},{"./../../bower_components/jquery/dist/jquery.js":2,"entity-blueprint-manager":53}],53:[function(require,module,exports){
+},{"./../../bower_components/jquery/dist/jquery.js":2,"entity-blueprint-manager":54}],54:[function(require,module,exports){
 module.exports.MixinCatalog = require('./lib/mixinCatalog');
 module.exports.BlueprintCatalog = require('./lib/blueprintCatalog');
 module.exports.Dictionary = require('./lib/dictionary');
-},{"./lib/blueprintCatalog":54,"./lib/dictionary":55,"./lib/mixinCatalog":56}],54:[function(require,module,exports){
+},{"./lib/blueprintCatalog":55,"./lib/dictionary":56,"./lib/mixinCatalog":57}],55:[function(require,module,exports){
 var Dictionary = require('./dictionary');
 /**
  * Generic blueprint manager (singleton).  What this will do is allow you
@@ -22086,7 +22523,7 @@ var BlueprintCatalog = function () {
 
 module.exports = BlueprintCatalog;
 
-},{"./dictionary":55}],55:[function(require,module,exports){
+},{"./dictionary":56}],56:[function(require,module,exports){
 /**
  *
  * Created by shaddockh on 9/28/14.
@@ -22227,7 +22664,7 @@ Dictionary.prototype.find = function (filt, limit) {
 
 module.exports = Dictionary;
 
-},{}],56:[function(require,module,exports){
+},{}],57:[function(require,module,exports){
 var Dictionary = require('./dictionary');
 
 /**
@@ -22315,7 +22752,7 @@ var MixinCatalog = function () {
 
 module.exports = MixinCatalog;
 
-},{"./dictionary":55}],57:[function(require,module,exports){
+},{"./dictionary":56}],58:[function(require,module,exports){
 (function (global){
 /**
  * @license
@@ -29104,7 +29541,7 @@ module.exports = MixinCatalog;
 }.call(this));
 
 }).call(this,typeof global !== "undefined" ? global : typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {})
-},{}],58:[function(require,module,exports){
+},{}],59:[function(require,module,exports){
 /*! sprintf.js | Copyright (c) 2007-2013 Alexandru Marasteanu <hello at alexei dot ro> | 3 clause BSD license */
 
 (function(ctx) {

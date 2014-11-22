@@ -173,4 +173,13 @@ Fixes Post Tutorial 16
 * moved the world definition into it's own blueprint file
 * in gameconfig.js you can now specify which world blueprint to load
 * implemented aspect.displayOutsideFov to allow items to stay rendered outside the field of view once they've been discovered (ie, terrain type objects)
-
+* TODO: Implement CCEvents so items can watch other items events
+* TODO: onPickup / onDrop in item
+* TODO: in Item, need to be notified of who picked up/dropped
+* TODO: Equip/Unequip should pass who equipped/unequipped in event
+* TODO: implement onGameTurn only on player
+* TODO: implement onMove
+* added new event type onRequestVerbs to allow mixins to return a list of actions and associated functions to call to perform those actions
+* modified inventory screen(I) to allow you to select an item and then it displays the (X)amine info and also allows you to hit <ENTER> to perform an action
+* created a new doActionScreen to peform an action
+* removed custom wield/wear/drop/eat/examine screens

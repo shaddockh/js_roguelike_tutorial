@@ -1,5 +1,6 @@
 var Singletons = require('./singletons');
 var Dictionary = require('entity-blueprint-manager').Dictionary;
+var eventMessage = require('./utils').events;
 
 /**
  *
@@ -54,7 +55,7 @@ Entity.prototype._loadBlueprint = function (blueprint, blueprintOverrides) {
       this.attachMixin(componentKey, blueprint[componentKey]);
     }
   }
-  this.raiseEvent('onLoaded');
+  this.raiseEvent(eventMessage.onLoaded);
 };
 
 Entity.prototype.attachMixin = function (mixin, blueprint) {
@@ -105,23 +106,36 @@ Entity.prototype.attachMixin = function (mixin, blueprint) {
   // Add all of our listeners
   if (mixin.listeners) {
     for (var listenerKey in mixin.listeners) {
-      // If we don't already have a key for this event in our listeners
-      // array, add it.
-      var listenerArray;
-      if (!this._listeners.containsKey(listenerKey)) {
-        listenerArray = [];
-        this._listeners.add(listenerKey, listenerArray);
-      } else {
-        listenerArray = this._listeners.get(listenerKey);
-      }
-      // Add the listener.
-      listenerArray.push(mixin.listeners[listenerKey]);
+      this.addListener(listenerKey, mixin.listeners[listenerKey]);
     }
   }
 
   // Finally call the init function if there is one
   if (mixin.init) {
     mixin.init.call(this, blueprint, mixin, Singletons.MixinCatalog);
+  }
+};
+
+/**
+ * Add an event handler for a specific event
+ * @param eventName
+ * @param eventHandler
+ */
+Entity.prototype.addListener = function (eventName, eventHandler) {
+  // If we don't already have a key for this event in our listeners
+  // array, add it.
+  var listenerArray;
+  if (!this._listeners.containsKey(eventName)) {
+    listenerArray = [];
+    this._listeners.add(eventName, listenerArray);
+  } else {
+    listenerArray = this._listeners.get(eventName);
+  }
+  // Add the listener.
+  listenerArray.push(eventHandler);
+
+  if (!eventMessage[eventName]) {
+    console.error('Warning: listener ' + eventName + ' being bound by ' + this._name + ' is not a standard event.');
   }
 };
 

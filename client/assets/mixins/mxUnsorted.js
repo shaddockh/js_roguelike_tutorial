@@ -3,7 +3,9 @@ var Singletons = require('./../singletons'),
   Game = require('./../game'),
   Entity = require('./../entity'),
   Dictionary = require('entity-blueprint-manager').Dictionary,
-  ROT = require('rot');
+  ROT = require('rot'),
+  eventMessage = require('./../utils').events,
+  _ = require('lodash');
 
 var Mixins = {};
 
@@ -345,7 +347,7 @@ Mixins.Destructible = {
       if (this.hasMixin('Life')) {
         this.kill(attacker);
       } else {
-        this.raiseEvent('onDestroy');
+        this.raiseEvent(eventMessage.onDestroy);
         this.getMap().removeEntity(this);
       }
 
@@ -579,6 +581,7 @@ Mixins.InventoryHolder = {
     for (var i = 0; i < this._items.length; i++) {
       if (!this._items[i]) {
         this._items[i] = item;
+        this._items[i].raiseEvent(eventMessage.onPickupItem, this);
         return true;
       }
     }
@@ -632,9 +635,21 @@ Mixins.InventoryHolder = {
     return added === indices.length;
   },
   dropItem: function (i) {
+    var item;
+    if (typeof (i) === 'object') {
+      item = i;
+      i = _.indexOf(this._items, item);
+    } else {
+      item = this._items[i];
+    }
     // Drops an item to the current map tile
-    if (this._items[i]) {
-      this.getMap().addEntityAtPosition(this._items[i], this.getX(), this.getY());
+    if (item) {
+      var result = item.raiseEvent(eventMessage.onDropItem, this);
+      //Let's see if any of the onDropItem events sent back a false
+      if (_.contains(result, false)) {
+        return;
+      }
+      this.getMap().addEntityAtPosition(item, this.getX(), this.getY());
       this.removeItem(i);
     }
   }
@@ -642,9 +657,39 @@ Mixins.InventoryHolder = {
 
 Mixins.Item = {
   name: 'Item',
-  doc: 'Item ',
+  doc: 'Base Item Mixin',
   init: function (blueprint) {
-
+    this._isDroppable = typeof (blueprint.isDroppable) !== 'undefined' ? blueprint.isDroppable : true;
+  },
+  isDroppable: function () {
+    return this._isDroppable;
+  },
+  listeners: {
+    onPickupItem: function (owner) {
+      this._container = owner;
+    },
+    onDropItem: function (owner) {
+      if (this.isDroppable()) {
+        this._container = null;
+        return true;
+      } else {
+        return false;
+      }
+    },
+    onRequestVerbs: function (entity) {
+      var results = [];
+      var self = this;
+      if (this.isDroppable() && this._container) {
+        results.push({
+          verb: 'Drop',
+          owner: this,
+          action: function () {
+            self._container.dropItem(self);
+          }
+        });
+      }
+      return results;
+    }
   }
 };
 
@@ -667,15 +712,15 @@ Mixins.Life = {
     message = message || 'You have died!';
     Game.sendMessage(this, message);
 
-    this.raiseEvent('onDeath');
+    this.raiseEvent(eventMessage.onDeath);
     if (attacker) {
-      attacker.raiseEvent('onKill', this);
+      attacker.raiseEvent(eventMessage.onKill, this);
     }
     // Check if the player died, and if so call their act method to prompt the user.
     if (this.hasMixin('PlayerActor')) {
       this.act();
     } else {
-      this.raiseEvent('onDestroy');
+      this.raiseEvent(eventMessage.onDestroy);
       this.getMap().removeEntity(this);
     }
   }
@@ -753,20 +798,10 @@ Mixins.EquipSlots = {
   name: 'EquipSlots',
   doc: 'Allows an entity to equip items',
   init: function (blueprint) {
-    this._weapon = blueprint.weapon || null;
-    this._armor = blueprint.armor || null;
-  },
-  wield: function (item) {
-    this._weapon = item;
-  },
-  unwield: function () {
     this._weapon = null;
-  },
-  wear: function (item) {
-    this._armor = item;
-  },
-  takeOff: function () {
     this._armor = null;
+    this.equip(blueprint.weapon);
+    this.equip(blueprint.armor);
   },
   getWeapon: function () {
     return this._weapon;
@@ -774,13 +809,42 @@ Mixins.EquipSlots = {
   getArmor: function () {
     return this._armor;
   },
+  isEquipped: function (item) {
+    if (this._weapon === item || this._armor === item) {
+      return true;
+    } else {
+      return false;
+    }
+  },
+  isSlotEquipped: function (slotName) {
+    //TODO: implement isSlotEquipped
+  },
+  canEquip: function (item) {
+    return true;
+  },
+  canUnequip: function (item) {
+    return true;
+  },
+  //TODO: need an equup function
+  equip: function (item) {
+    if (item && item.isWieldable()) {
+      this.unequip(this._weapon);
+      this._weapon = item;
+      item.raiseEvent(eventMessage.onEquip, this);
+    } else if (item && item.isWearable()) {
+      this.unequip(this._armor);
+      this._armor = item;
+      item.raiseEvent(eventMessage.onEquip, this);
+    }
+  },
   unequip: function (item) {
     // Helper function to be called before getting rid of an item.
-    if (this._weapon === item) {
-      this.unwield();
-    }
-    if (this._armor === item) {
-      this.takeOff();
+    if (item && this._weapon === item) {
+      this._weapon = null;
+      item.raiseEvent(eventMessage.onUnequip, this);
+    } else if (item && this._armor === item) {
+      this._armor = null;
+      item.raiseEvent(eventMessage.onUnequip, this);
     }
   },
   getEquippedDefenseValue: function () {
@@ -872,7 +936,7 @@ Mixins.ExperienceGainer = {
     // Check if we gained at least one level.
     if (levelsGained > 0) {
       Game.sendMessage(this, "You advance to level %d.", [this._level]);
-      this.raiseEvent('onGainLevel');
+      this.raiseEvent(eventMessage.onGainLevel);
     }
   },
   listeners: {
@@ -950,7 +1014,7 @@ Mixins.Examinable = {
   },
   examine: function () {
     var details = [];
-    var detailGroups = this.raiseEvent('details');
+    var detailGroups = this.raiseEvent(eventMessage.details);
     // Iterate through each return value, grabbing the details from the arrays.
     if (detailGroups) {
       for (var i = 0, l = detailGroups.length; i < l; i++) {

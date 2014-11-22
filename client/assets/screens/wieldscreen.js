@@ -13,15 +13,20 @@ var wieldScreen = new ItemListScreen({
     var Game = require('../game');
     // Check if we selected 'no item'
     var keys = Object.keys(selectedItems);
+    var item = this._player.getWeapon();
     if (keys.length === 0) {
-      this._player.unwield();
+      if (item) {
+        this._player.unequip(item);
+      }
       Game.sendMessage(this._player, "You are empty handed.");
     } else {
+      if (item) {
+        this._player.unequip(item);
+      }
       // Make sure to unequip the item first in case it is the armor.
-      var item = selectedItems[keys[0]];
-      this._player.unequip(item);
-      this._player.wield(item);
-      Game.sendMessage(this._player, "You are wielding %s.", [item.describeA()]);
+      var newitem = selectedItems[keys[0]];
+      this._player.wield(newitem);
+      Game.sendMessage(this._player, "You are wielding %s.", [newitem.describeA()]);
     }
     return true;
   }

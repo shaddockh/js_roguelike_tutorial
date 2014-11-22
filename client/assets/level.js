@@ -2,7 +2,8 @@ var Singletons = require('./singletons'),
   WorldBuilder = require('./worldbuilder'),
   ROT = require('rot'),
   utils = require('./utils'),
-  _ = require('lodash');
+  _ = require('lodash'),
+  eventMessage = utils.events;
 
 //Correponds to "World" in the other tutorial
 
@@ -62,9 +63,15 @@ Level.prototype.deactivate = function () {
 
 Level.prototype.drawViewPort = function (display, x1, y1, x2, y2) {
 
+  console.time('Draw Viewport');
   // This object will keep track of all visible map cells
+
   var visibleCells = {};
   var level = this;
+
+  if (level.getLightingModel()) {
+    level.getLightingModel().reset();
+  }
   // Find all visible cells and update the object
   this.getFov().compute(
     Singletons.Player.getX(), Singletons.Player.getY(),
@@ -112,6 +119,7 @@ Level.prototype.drawViewPort = function (display, x1, y1, x2, y2) {
       lightColor: level.getLightingModel().getColorAtCoord(entity.getX(), entity.getY())
     });
   });
+  console.timeEnd('Draw Viewport');
 };
 
 Level.prototype.getEntities = function () {
@@ -280,7 +288,7 @@ Level.prototype.addEntity = function (entity) {
   // Add the entity to the list of entities
   this._entities.push(entity);
 
-  entity.raiseEvent(utils.events.onEnteredLevel, this);
+  entity.raiseEvent(eventMessage.onEnteredLevel, this);
   // Check if this entity is an actor, and if so add
   // them to the scheduler
   if (this.isActiveLevel()) {

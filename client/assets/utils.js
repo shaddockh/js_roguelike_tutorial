@@ -55,6 +55,21 @@ var namedEntityFilters = {
 module.exports.namedEntityFilters = namedEntityFilters;
 
 var events = {
-  onEnteredLevel: 'onEnteredLevel'
+  onEnteredLevel: 'onEnteredLevel',
+  onActivate: 'onActivate',
+  onDeactivate: 'onDeactivate',
+  onEquip: 'onEquip',
+  onUnequip: 'onUnequip',
+  onGameTurn: 'onGameTurn',
+  onDestroy: 'onDestroy',
+  onDeath: 'onDeath',
+  onKill: 'onKill',
+  onGainLevel: 'onGainLevel',
+  details: 'details',
+  onRequestDetails: 'onRequestDetails',
+  onLoaded: 'onLoaded',
+  onRequestVerbs: 'onRequestVerbs',
+  onDropItem: 'onDropItem',
+  onPickupItem: 'onPickupItem'
 };
 module.exports.events = events;

@@ -5,6 +5,10 @@ var LightingModel = function (lighting) {
   this._dirty = true;
 };
 
+LightingModel.prototype.reset = function () {
+  this._dirty = true;
+};
+
 LightingModel.prototype.setLighting = function (lighting) {
   this._lighting = lighting;
   this._dirty = true;
@@ -20,20 +24,21 @@ LightingModel.prototype.getAmbientLight = function () {
 };
 
 LightingModel.prototype.setLight = function (x, y, color) {
-  console.log('setting light: ', x, y, color);
-  this._lighting.setLight(x, y, color);
-  this._dirty = true;
+  if (this._lighting) {
+    this._lighting.setLight(x, y, color);
+    this._dirty = true;
+  }
 };
 
 LightingModel.prototype.compute = function () {
-  if (this._dirty) {
+  if (this._dirty && this._lighting) {
+    this._lighting.reset();
     var lightData = {};
     var lightingCallback = function (x, y, color) {
       lightData[x + "," + y] = color;
     };
     this._lighting.compute(lightingCallback);
     this._lightData = lightData;
-    console.log(lightData);
     this._dirty = false;
   }
 };

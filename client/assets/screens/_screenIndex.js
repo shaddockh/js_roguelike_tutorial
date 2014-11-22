@@ -1,5 +1,6 @@
 module.exports = {
   'DropScreen': require('./dropscreen'),
+  'DoActionScreen': require('./doactionscreen'),
   'EatScreen': require('./eatscreen'),
   'ExamineScreen': require('./examinescreen'),
   'GainStatsScreen': require('./gainstatscreen'),
