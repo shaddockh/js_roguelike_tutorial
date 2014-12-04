@@ -2,7 +2,9 @@ var ItemMixins = {};
 
 var utils = require('../utils'),
   eventMessage = utils.events;
-var vsprintf = require('sprintf-js').vsprintf;
+var vsprintf = require('sprintf-js').vsprintf,
+  _ = require('lodash'),
+  Entity = require('../entity');
 
 // Edible mixins
 ItemMixins.Edible = {
@@ -210,20 +212,82 @@ ItemMixins.Effect = {
   setEffectDuration: function (value) {
     this._effectDuration = value;
   },
-  updateEffect: function () {},
-  startEffect: function () {},
-  endEffect: function () {}
+  updateEffect: function () {
+    this.raiseEvent(eventMessage.onUpdateEffect);
+  },
+  startEffect: function () {
+    this.raiseEvent(eventMessage.onStartEffect);
+  },
+  endEffect: function () {
+    this.raiseEvent(eventMessage.onEndEffect);
+  },
+  isDone: function () {
+    return this._isDone;
+  }
+};
+ItemMixins.Follower = {
+
+  name: 'Follower',
+  doc: 'Will cause this entity to follow another entity',
+  init: function (blueprint) {
+
+  },
+  followEntity: function (entity) {
+    this._followedEntity = entity;
+  },
+  stopFollowingEntity: function (entity) {
+
+  },
+  listener: {
+    onAct: function () {
+      var followed = this._followedEntity;
+      if (followed) {
+        //TODO: verify that we are removed from prior map
+        this.setPosition(followed.getX(), followed.getY());
+        this.setMap(followed.getMap());
+      }
+    }
+  }
 };
 
-ItemMixins.EffectHandler = {
-  name: 'EffectHandler',
-  doc: 'Handles applying an effect',
+ItemMixins.EffectManager = {
+  name: 'EffectManager',
+  doc: 'Handles applying an effect to an entity and tracking effects applied',
   init: function (blueprint) {
     blueprint = blueprint || {};
     this._effectName = blueprint.effectName || null;
+    this._effects = [];
   },
   applyEffect: function (targetEntity) {
     //TODO: apply effect should instantiate a new version of effect and apply it to entity
+    var effect = new Entity(this._effectName);
+    effect.startEffect.call(effect, this, targetEntity);
+    this.addEffect(effect);
+  },
+  addEffect: function (effect) {
+    this._effects.push(effect);
+  },
+  updateEffects: function () {
+    var effectsToRemove = [];
+    _.forEach(this._effects, function (effect) {
+      effect.updateEffect();
+      if (effect.isDone()) {
+        effect.end();
+        effectsToRemove.push(effect);
+      }
+    });
+    this.removeAllEffects(effectsToRemove);
+  },
+  removeAllEffects: function (effectsToRemove) {
+    //todo: if effects is blank, remove entire array otherwise remove just provided
+    var effects = this._effects;
+    if (!effects || effects.length === 0) {
+      effects = []; //TODO: find better way to clear an array
+    } else {
+      effects = _.remove(this._effects, function (el) {
+
+      });
+    }
   }
 };
 

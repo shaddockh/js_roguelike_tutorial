@@ -99,9 +99,10 @@ Mixins.Activateable = {
   },
   activate: function (activateMessage) {
     console.log('activate called');
-    for (var i = 0; i < this._registeredActivateCallbacks.length; i++) {
-      this._registeredActivateCallbacks[i].call(this, activateMessage);
-    }
+    this.raiseEvent(eventMessage.onActivate, activateMessage);
+    //for (var i = 0; i < this._registeredActivateCallbacks.length; i++) {
+    //this._registeredActivateCallbacks[i].call(this, activateMessage);
+    //}
   }
 };
 
@@ -111,15 +112,22 @@ Mixins.Portal = {
   type: 'Portal',
   doc: 'Moves player from one level to another level',
   init: function (blueprint) {
-    this._targetLevel = blueprint.targetLevel || null;
+    this._targetLevelId = blueprint.targetLevelId || null;
     this._targetX = blueprint.targetX || null;
     this._targetY = blueprint.targetY || null;
-    if (this.hasMixin('Activateable')) {
-      this.registerActivate(this.activatePortal);
+    this._targetPortalId = blueprint.targetPortalId || null;
+    this._portalId = blueprint.portalId || null;
+    //if (this.hasMixin('Activateable')) {
+    // this.registerActivate(this.activatePortal);
+    //}
+  },
+  listeners: {
+    onActivate: function (activateMessage) {
+      this.activatePortal(activateMessage);
     }
   },
-  setPortalTarget: function (level, x, y) {
-    this._targetLevel = level;
+  setPortalTarget: function (levelId, x, y) {
+    this._targetLevelId = levelId;
     this._targetX = x;
     this._targetY = y;
   },
@@ -127,9 +135,9 @@ Mixins.Portal = {
     //TODO: handle specific messages
     console.log('TODO: Handle Portal Specific Messages ');
     Singletons.World.getActiveLevel().removeEntity(Singletons.Player);
-    Singletons.World.setActiveLevel(this._targetLevel);
+    Singletons.World.setActiveLevel(this._targetLevelId);
     Singletons.World.getActiveLevel().addEntityAtPosition(Singletons.Player, this._targetX, this._targetY);
-    console.log('Switching to level: ' + this._targetLevel);
+    console.log('Switching to level: ' + this._targetLevelId);
 
   }
 };

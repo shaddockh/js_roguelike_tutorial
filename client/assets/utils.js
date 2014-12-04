@@ -70,6 +70,9 @@ var events = {
   onLoaded: 'onLoaded',
   onRequestVerbs: 'onRequestVerbs',
   onDropItem: 'onDropItem',
-  onPickupItem: 'onPickupItem'
+  onPickupItem: 'onPickupItem',
+  onStartEffect: 'onStartEffect',
+  onEndEffect: 'onEndEffect',
+  onUpdateEffect: 'onUpdateEffect'
 };
 module.exports.events = events;

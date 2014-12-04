@@ -174,7 +174,7 @@ Fixes Post Tutorial 16
 * in gameconfig.js you can now specify which world blueprint to load
 * implemented aspect.displayOutsideFov to allow items to stay rendered outside the field of view once they've been discovered (ie, terrain type objects)
 * TODO: Implement CCEvents so items can watch other items events
-* TODO: onPickup / onDrop in item
+* Implemented onPickup / onDrop in item
 * TODO: in Item, need to be notified of who picked up/dropped
 * TODO: Equip/Unequip should pass who equipped/unequipped in event
 * TODO: implement onGameTurn only on player
@@ -183,3 +183,10 @@ Fixes Post Tutorial 16
 * modified inventory screen(I) to allow you to select an item and then it displays the (X)amine info and also allows you to hit <ENTER> to perform an action
 * created a new doActionScreen to peform an action
 * removed custom wield/wear/drop/eat/examine screens
+
+2014-12-02
+====
+* modified the Static Terrain level builder to handle full blueprint definitions instead of just blueprint names for entities, allowing for customization of a blueprint in the map itself
+* additional work on implementing an effects manager
+* TODO: started work on modifying portal mixin to not only portal to a specific location, but also to a named location (WIP)
+* converted portals to use listeners for activation

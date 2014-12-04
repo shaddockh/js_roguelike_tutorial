@@ -129,6 +129,7 @@ var caveToBossRegionConnection = (function () {
     connect: connect
   };
 })();
+
 var caveToCaveRegionConnector = (function () {
 
   // This fetches a list of points that overlap between one

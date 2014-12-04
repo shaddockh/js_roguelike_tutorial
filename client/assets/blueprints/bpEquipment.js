@@ -50,10 +50,26 @@ Blueprints.Torch = {
     expiredName: 'Burnt out torch',
     nonExpiredName: 'Torch (%s turns left)'
   },
+  EffectManager: {
+    effectName: 'fxTorch',
+    targetOwner: true
+  },
   EventRouter: {
     onEquip: eventMessage.onActivate,
     onUnequip: eventMessage.onDeactivate
   }
+};
+Blueprints.fxBase = {
+  name: 'fxBase',
+  inherits: '_base',
+  Position: {},
+  Effect: {}
+};
+
+Blueprints.fxTorch = {
+  name: 'fxTorch',
+  inherits: 'fxBase',
+  LightEffect: {}
 };
 
 Blueprints.dagger = {

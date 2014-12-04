@@ -261,8 +261,8 @@ Mixins.BossLevelTerrainBuilder = {
   }
 };
 
-Mixins.MapTerrainBuilder = {
-  name: 'MapTerrainBuilder',
+Mixins.StaticTerrainBuilder = {
+  name: 'StaticTerrainBuilder',
   type: 'TerrainBuilder',
   doc: 'Generates a level based upon a provided map',
   init: function (blueprint) {
@@ -275,7 +275,12 @@ Mixins.MapTerrainBuilder = {
    *   '#': 'tilename'  or 'entityname'
    * or
    *   '#': { tile: 'tilename', entity: ['entityname','entity2name'] }
-   *
+   * or
+   *   '#': { tile: 'tilename', entity: 'entityname'
+   * or
+   *   '#': { tile: 'tilename', entity: {blueprint definition} ie: { inherits: '', ... }
+   * or
+   *   '#': { tile: 'tilename', entity: [blueprint, blueprint, ...]}
    * @param locationInfo
    * @param x
    * @param y
@@ -284,21 +289,32 @@ Mixins.MapTerrainBuilder = {
    * @param entities
    */
   buildTerrainLocation: function (locationInfo, x, y, tiles, TileCatalog, entities) {
+    function createEntity(entityType) {
+      if (typeof(entityType) === 'string') {
+        return new Entity(entityType);
+      } else {
+        return new Entity(entityType.inherits, entityType);
+      }
+    }
+
     var entity = null;
     if (typeof (locationInfo) === 'string') {
       if (TileCatalog.containsKey(locationInfo)) {
         tiles[x][y] = TileCatalog.get(locationInfo);
       } else {
         tiles[x][y] = TileCatalog.get(this._defaultTile);
-        entity = new Entity(locationInfo);
+        entity = createEntity(locationInfo);
         entity.setPosition(x, y);
         entities.push(entity);
       }
     } else {
       tiles[x][y] = TileCatalog.get(locationInfo.tile);
-      if (locationInfo.entity && locationInfo.entity.length) {
+      if (locationInfo.entity) {
+        if (!_.isArray(locationInfo.entity)) {
+          locationInfo.entity = [locationInfo.entity];
+        }
         for (var e = 0; e < locationInfo.entity.length; e++) {
-          entity = new Entity(locationInfo.entity[e]);
+          entity = createEntity(locationInfo.entity[e]);
           entity.setPosition(x, y);
           entities.push(entity);
         }

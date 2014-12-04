@@ -3,8 +3,13 @@ Blueprints.BaseLevelBuilder = {
   name: 'BaseLevelBuilder',
   inherits: '_base',
   LevelBuilder: {},
-  ReportStatistics: {}
+  ReportStatistics: {},
+  FovBuilder: {},
+  Lighting: {
+    ambientLight: [130, 130, 130]
+  }
 };
+
 
 Blueprints.FungusLevelBuilder = {
   name: 'FungusLevelBuilder',
@@ -15,7 +20,6 @@ Blueprints.FungusLevelBuilder = {
     width: 100,
     height: 100
   },
-  FovBuilder: {},
   CellularAutomataTerrainBuilder: {
     smoothness: 3
   },
@@ -44,7 +48,6 @@ Blueprints.ZombieBossLevel01 = {
     levelId: 'ZombieBossLevel01'
   },
   BossLevelTerrainBuilder: {},
-  FovBuilder: {},
   RandomPositionCreatureBuilder: {
     minCreatureCount: 1,
     maxCreatureCount: 1,
@@ -60,18 +63,14 @@ Blueprints.TownLevel01 = {
     height: 13,
     levelId: 'TownLevel01'
   },
-  FovBuilder: {},
-  Lighting: {
-    ambientLight: [130, 130, 130]
-  },
-  MapTerrainBuilder: {
+  StaticTerrainBuilder: {
     levelData: [
       '############################################',
       '#.....................F....................#',
       '#..........................................#',
       '#..........................................#',
       '#.....................F....................#',
-      '#............<.............................#',
+      '#............>.............................#',
       '#...............................@..........#',
       '#..........................................#',
       '#...................................k......#',
@@ -106,9 +105,18 @@ Blueprints.TownLevel01 = {
       'F': 'FungusTemplate',
       '^': 'Sconce',
       'T': 'Torch',
-      '<': {
+      '>': {
         tile: 'stairsDownTile',
-        entity: ['StairsPortal']
+        entity: {
+          inherits: 'StairsPortal',
+          Portal: {
+            portalId: 'RegionEntryPoint',
+            targetLevelId: 'fungus01',
+            targetX: 30,
+            targetY: 30,
+            targetPortalId: 'RegionEntryPoint'
+          }
+        }
       },
       '@': {
         tile: 'floorTile',

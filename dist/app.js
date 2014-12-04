@@ -16904,10 +16904,26 @@ Blueprints.Torch = {
     expiredName: 'Burnt out torch',
     nonExpiredName: 'Torch (%s turns left)'
   },
+  EffectManager: {
+    effectName: 'fxTorch',
+    targetOwner: true
+  },
   EventRouter: {
     onEquip: eventMessage.onActivate,
     onUnequip: eventMessage.onDeactivate
   }
+};
+Blueprints.fxBase = {
+  name: 'fxBase',
+  inherits: '_base',
+  Position: {},
+  Effect: {}
+};
+
+Blueprints.fxTorch = {
+  name: 'fxTorch',
+  inherits: 'fxBase',
+  LightEffect: {}
 };
 
 Blueprints.dagger = {
@@ -17241,7 +17257,7 @@ Blueprints.Portal = {
   inherits: 'ActivatableGizmo',
   name: 'Portal',
   portal: {
-    targetLevel: null,
+    targetLevelId: null,
     targetX: null,
     targetY: null
   }
@@ -17270,8 +17286,13 @@ Blueprints.BaseLevelBuilder = {
   name: 'BaseLevelBuilder',
   inherits: '_base',
   LevelBuilder: {},
-  ReportStatistics: {}
+  ReportStatistics: {},
+  FovBuilder: {},
+  Lighting: {
+    ambientLight: [130, 130, 130]
+  }
 };
+
 
 Blueprints.FungusLevelBuilder = {
   name: 'FungusLevelBuilder',
@@ -17282,7 +17303,6 @@ Blueprints.FungusLevelBuilder = {
     width: 100,
     height: 100
   },
-  FovBuilder: {},
   CellularAutomataTerrainBuilder: {
     smoothness: 3
   },
@@ -17311,7 +17331,6 @@ Blueprints.ZombieBossLevel01 = {
     levelId: 'ZombieBossLevel01'
   },
   BossLevelTerrainBuilder: {},
-  FovBuilder: {},
   RandomPositionCreatureBuilder: {
     minCreatureCount: 1,
     maxCreatureCount: 1,
@@ -17327,10 +17346,6 @@ Blueprints.TownLevel01 = {
     height: 13,
     levelId: 'TownLevel01'
   },
-  FovBuilder: {},
-  Lighting: {
-    ambientLight: [130, 130, 130]
-  },
   MapTerrainBuilder: {
     levelData: [
       '############################################',
@@ -17338,7 +17353,7 @@ Blueprints.TownLevel01 = {
       '#..........................................#',
       '#..........................................#',
       '#.....................F....................#',
-      '#............<.............................#',
+      '#............>.............................#',
       '#...............................@..........#',
       '#..........................................#',
       '#...................................k......#',
@@ -17373,9 +17388,18 @@ Blueprints.TownLevel01 = {
       'F': 'FungusTemplate',
       '^': 'Sconce',
       'T': 'Torch',
-      '<': {
+      '>': {
         tile: 'stairsDownTile',
-        entity: ['StairsPortal']
+        entity: {
+          inherits: 'StairsPortal',
+          Portal: {
+            portalId: 'RegionEntryPoint',
+            targetLevelId: 'fungus01',
+            targetX: 30,
+            targetY: 30,
+            targetPortalId: 'RegionEntryPoint'
+          }
+        }
       },
       '@': {
         tile: 'floorTile',
@@ -18522,7 +18546,12 @@ Mixins.MapTerrainBuilder = {
    *   '#': 'tilename'  or 'entityname'
    * or
    *   '#': { tile: 'tilename', entity: ['entityname','entity2name'] }
-   *
+   * or
+   *   '#': { tile: 'tilename', entity: 'entityname'
+   * or
+   *   '#': { tile: 'tilename', entity: {blueprint definition} ie: { inherits: '', ... }
+   * or
+   *   '#': { tile: 'tilename', entity: [blueprint, blueprint, ...]}
    * @param locationInfo
    * @param x
    * @param y
@@ -18531,21 +18560,32 @@ Mixins.MapTerrainBuilder = {
    * @param entities
    */
   buildTerrainLocation: function (locationInfo, x, y, tiles, TileCatalog, entities) {
+    function createEntity(entityType) {
+      if (typeof(entityType) === 'string') {
+        return new Entity(entityType);
+      } else {
+        return new Entity(entityType.inherits, entityType);
+      }
+    }
+
     var entity = null;
     if (typeof (locationInfo) === 'string') {
       if (TileCatalog.containsKey(locationInfo)) {
         tiles[x][y] = TileCatalog.get(locationInfo);
       } else {
         tiles[x][y] = TileCatalog.get(this._defaultTile);
-        entity = new Entity(locationInfo);
+        entity = createEntity(locationInfo);
         entity.setPosition(x, y);
         entities.push(entity);
       }
     } else {
       tiles[x][y] = TileCatalog.get(locationInfo.tile);
-      if (locationInfo.entity && locationInfo.entity.length) {
+      if (locationInfo.entity) {
+        if (!_.isArray(locationInfo.entity)) {
+          locationInfo.entity = [locationInfo.entity];
+        }
         for (var e = 0; e < locationInfo.entity.length; e++) {
-          entity = new Entity(locationInfo.entity[e]);
+          entity = createEntity(locationInfo.entity[e]);
           entity.setPosition(x, y);
           entities.push(entity);
         }
@@ -18976,7 +19016,9 @@ var ItemMixins = {};
 
 var utils = require('../utils'),
   eventMessage = utils.events;
-var vsprintf = require('sprintf-js').vsprintf;
+var vsprintf = require('sprintf-js').vsprintf,
+  _ = require('lodash'),
+  Entity = require('../entity');
 
 // Edible mixins
 ItemMixins.Edible = {
@@ -19184,26 +19226,88 @@ ItemMixins.Effect = {
   setEffectDuration: function (value) {
     this._effectDuration = value;
   },
-  updateEffect: function () {},
-  startEffect: function () {},
-  endEffect: function () {}
+  updateEffect: function () {
+    this.raiseEvent(eventMessage.onUpdateEffect);
+  },
+  startEffect: function () {
+    this.raiseEvent(eventMessage.onStartEffect);
+  },
+  endEffect: function () {
+    this.raiseEvent(eventMessage.onEndEffect);
+  },
+  isDone: function () {
+    return this._isDone;
+  }
+};
+ItemMixins.Follower = {
+
+  name: 'Follower',
+  doc: 'Will cause this entity to follow another entity',
+  init: function (blueprint) {
+
+  },
+  followEntity: function (entity) {
+    this._followedEntity = entity;
+  },
+  stopFollowingEntity: function (entity) {
+
+  },
+  listener: {
+    onAct: function () {
+      var followed = this._followedEntity;
+      if (followed) {
+        //TODO: verify that we are removed from prior map
+        this.setPosition(followed.getX(), followed.getY());
+        this.setMap(followed.getMap());
+      }
+    }
+  }
 };
 
-ItemMixins.EffectHandler = {
-  name: 'EffectHandler',
-  doc: 'Handles applying an effect',
+ItemMixins.EffectManager = {
+  name: 'EffectManager',
+  doc: 'Handles applying an effect to an entity and tracking effects applied',
   init: function (blueprint) {
     blueprint = blueprint || {};
     this._effectName = blueprint.effectName || null;
+    this._effects = [];
   },
   applyEffect: function (targetEntity) {
     //TODO: apply effect should instantiate a new version of effect and apply it to entity
+    var effect = new Entity(this._effectName);
+    effect.startEffect.call(effect, this, targetEntity);
+    this.addEffect(effect);
+  },
+  addEffect: function (effect) {
+    this._effects.push(effect);
+  },
+  updateEffects: function () {
+    var effectsToRemove = [];
+    _.forEach(this._effects, function (effect) {
+      effect.updateEffect();
+      if (effect.isDone()) {
+        effect.end();
+        effectsToRemove.push(effect);
+      }
+    });
+    this.removeAllEffects(effectsToRemove);
+  },
+  removeAllEffects: function (effectsToRemove) {
+    //todo: if effects is blank, remove entire array otherwise remove just provided
+    var effects = this._effects;
+    if (!effects || effects.length === 0) {
+      effects = []; //TODO: find better way to clear an array
+    } else {
+      effects = _.remove(this._effects, function (el) {
+
+      });
+    }
   }
 };
 
 module.exports = ItemMixins;
 
-},{"../utils":48,"sprintf-js":59}],23:[function(require,module,exports){
+},{"../entity":14,"../utils":48,"lodash":58,"sprintf-js":59}],23:[function(require,module,exports){
 var Mixins = {};
 Mixins.Tile = {
   name: 'Tile',
@@ -19337,9 +19441,10 @@ Mixins.Activateable = {
   },
   activate: function (activateMessage) {
     console.log('activate called');
-    for (var i = 0; i < this._registeredActivateCallbacks.length; i++) {
-      this._registeredActivateCallbacks[i].call(this, activateMessage);
-    }
+    this.raiseEvent(eventMessage.onActivate, activateMessage);
+    //for (var i = 0; i < this._registeredActivateCallbacks.length; i++) {
+    //this._registeredActivateCallbacks[i].call(this, activateMessage);
+    //}
   }
 };
 
@@ -19349,15 +19454,22 @@ Mixins.Portal = {
   type: 'Portal',
   doc: 'Moves player from one level to another level',
   init: function (blueprint) {
-    this._targetLevel = blueprint.targetLevel || null;
+    this._targetLevelId = blueprint.targetLevelId || null;
     this._targetX = blueprint.targetX || null;
     this._targetY = blueprint.targetY || null;
-    if (this.hasMixin('Activateable')) {
-      this.registerActivate(this.activatePortal);
+    this._targetPortalId = blueprint.targetPortalId || null;
+    this._portalId = blueprint.portalId || null;
+    //if (this.hasMixin('Activateable')) {
+    // this.registerActivate(this.activatePortal);
+    //}
+  },
+  listeners: {
+    onActivate: function (activateMessage) {
+      this.activatePortal(activateMessage);
     }
   },
-  setPortalTarget: function (level, x, y) {
-    this._targetLevel = level;
+  setPortalTarget: function (levelId, x, y) {
+    this._targetLevelId = levelId;
     this._targetX = x;
     this._targetY = y;
   },
@@ -19365,9 +19477,9 @@ Mixins.Portal = {
     //TODO: handle specific messages
     console.log('TODO: Handle Portal Specific Messages ');
     Singletons.World.getActiveLevel().removeEntity(Singletons.Player);
-    Singletons.World.setActiveLevel(this._targetLevel);
+    Singletons.World.setActiveLevel(this._targetLevelId);
     Singletons.World.getActiveLevel().addEntityAtPosition(Singletons.Player, this._targetX, this._targetY);
-    console.log('Switching to level: ' + this._targetLevel);
+    console.log('Switching to level: ' + this._targetLevelId);
 
   }
 };
@@ -20686,7 +20798,9 @@ inventoryScreen.renderActionArea = function (display) {
     display.drawText(50, 20, 'Actions Available: ');
     var verbs = _.flatten(item.raiseEvent(eventMessage.onRequestVerbs, this._player));
     if (verbs.length) {
-      var actionList = _.map(verbs, function(verb) { return verb.verb;}).join(', ');
+      var actionList = _.map(verbs, function (verb) {
+        return verb.verb;
+      }).join(', ');
       display.drawText(50, 21, actionList);
     } else {
       display.drawText(50, 21, 'None');
@@ -21688,7 +21802,10 @@ var events = {
   onLoaded: 'onLoaded',
   onRequestVerbs: 'onRequestVerbs',
   onDropItem: 'onDropItem',
-  onPickupItem: 'onPickupItem'
+  onPickupItem: 'onPickupItem',
+  onStartEffect: 'onStartEffect',
+  onEndEffect: 'onEndEffect',
+  onUpdateEffect: 'onUpdateEffect'
 };
 module.exports.events = events;
 
@@ -21877,6 +21994,7 @@ var caveToBossRegionConnection = (function () {
     connect: connect
   };
 })();
+
 var caveToCaveRegionConnector = (function () {
 
   // This fetches a list of points that overlap between one
