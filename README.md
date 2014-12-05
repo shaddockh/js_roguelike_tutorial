@@ -190,3 +190,11 @@ Fixes Post Tutorial 16
 * additional work on implementing an effects manager
 * TODO: started work on modifying portal mixin to not only portal to a specific location, but also to a named location (WIP)
 * converted portals to use listeners for activation
+
+2014-12-03
+====
+* TODO: need to enforce consistency in blueprint mixin sections.  currently Blueprint{ Mixin:{}} and Blueprint{ mixin:{}} are handled as two separate mixins
+* FIX: made sure the blueprint definition in the first level used the proper casing for Portal
+* migrated the base Actor mixin to have an "act" method and then raise on onAct event that can be subscribed to
+* migrated the FoodConsumer to listen for on onGameTurn event to behave.  
+* TODO: migrate the FoodConsumer to use something else to activate.. onGameTurn only applies to the player

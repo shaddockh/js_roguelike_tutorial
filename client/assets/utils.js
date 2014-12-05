@@ -73,6 +73,7 @@ var events = {
   onPickupItem: 'onPickupItem',
   onStartEffect: 'onStartEffect',
   onEndEffect: 'onEndEffect',
-  onUpdateEffect: 'onUpdateEffect'
+  onUpdateEffect: 'onUpdateEffect',
+  onAct: 'onAct'
 };
 module.exports.events = events;

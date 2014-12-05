@@ -744,6 +744,11 @@ Mixins.FoodConsumer = {
     // Number of points to decrease fullness by every turn.
     this._fullnessDepletionRate = blueprint.fullnessDepletionRate || 1;
   },
+  listeners: {
+    onGameTurn: function () {
+      this.addTurnHunger();
+    }
+  },
   addTurnHunger: function () {
     // Remove the standard depletion points
     this.modifyFullnessBy(this._fullnessDepletionRate * -1);

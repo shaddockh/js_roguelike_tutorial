@@ -10,7 +10,6 @@ Blueprints.BaseLevelBuilder = {
   }
 };
 
-
 Blueprints.FungusLevelBuilder = {
   name: 'FungusLevelBuilder',
   inherits: 'BaseLevelBuilder',

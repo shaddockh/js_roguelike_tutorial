@@ -3,6 +3,7 @@ var Mixins = {},
   Game = require('../game'),
   Entity = require('../entity'),
   Dictionary = require('entity-blueprint-manager').Dictionary,
+  eventMessage = require('./../utils').events,
   ROT = require('rot');
 
 /**
@@ -24,7 +25,11 @@ Mixins.Actor = {
     this._speed = value;
   },
   act: function () {
-    //prototype method
+    if (this._acting) {
+      return;
+    }
+    this.raiseEvent(eventMessage.onAct);
+    this._acting = false;
   }
 };
 
@@ -33,27 +38,22 @@ Mixins.PlayerActor = {
   type: 'Actor',
   doc: 'Player controller',
   init: function (blueprint) {},
-  act: function () {
-    if (this._acting) {
-      return;
+  listeners: {
+    onAct: function () {
+      this.raiseEvent(eventMessage.onGameTurn);
+      // Detect if the game is over
+      if (!this.isAlive()) {
+        Singletons.ScreenCatalog.getScreen('PlayScreen').setGameEnded(true);
+        // Send a last message to the player
+        Game.sendMessage(this, 'You have died... Press [Enter] to continue!');
+      }
+      //Re-render the screen
+      Game.refresh();
+      //lock the engine and wait asynchronously
+      //for the player to press a key
+      Singletons.World.getEngine().lock();
+      this.clearMessages();
     }
-    this._acting = true;
-    if (this.hasMixin('FoodConsumer')) {
-      this.addTurnHunger();
-    }
-    // Detect if the game is over
-    if (!this.isAlive()) {
-      Singletons.ScreenCatalog.getScreen('PlayScreen').setGameEnded(true);
-      // Send a last message to the player
-      Game.sendMessage(this, 'You have died... Press [Enter] to continue!');
-    }
-    //Re-render the screen
-    Game.refresh();
-    //lock the engine and wait asynchronously
-    //for the player to press a key
-    Singletons.World.getEngine().lock();
-    this.clearMessages();
-    this._acting = false;
   },
   playerActivate: function (x, y, map, activateMessage) {
     this.getMap().getEntitiesAt(x, y).forEach(function (entity) {
@@ -72,7 +72,12 @@ Mixins.FungusActor = {
     this._growthsRemaining = blueprint.growths || 5;
     this._templateToSpawn = blueprint.templateToSpawn || 'FungusTemplate';
   },
-  act: function () {
+  listeners: {
+    onAct: function () {
+      this.doAct();
+    }
+  },
+  doAct: function () {
     // Check if we are going to try growing this turn
     if (this._growthsRemaining > 0) {
       if (Singletons.RNG.random() <= 0.02) {
@@ -108,7 +113,12 @@ Mixins.WanderingActor = {
   name: 'WanderingActor',
   type: 'Actor',
   doc: 'Wandering actor.  Just randomly wanders around',
-  act: function () {
+  listeners: {
+    onAct: function () {
+      this.doAct();
+    }
+  },
+  doAct: function () {
     // Flip coin to determine if moving by 1 in the positive or negative direction
     var moveOffset = (Math.round(Singletons.RNG.random()) === 1) ? 1 : -1;
     // Flip coin to determine if moving in x direction or y direction
@@ -146,7 +156,12 @@ Mixins.TaskActor = {
       canDoTaskName: canDoTaskMethodName
     });
   },
-  act: function () {
+  listeners: {
+    onAct: function () {
+      this.doAct();
+    }
+  },
+  doAct: function () {
     // Iterate through all our tasks
     var task;
     for (var i = 0; i < this._tasks.length; i++) {

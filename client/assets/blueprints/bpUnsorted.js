@@ -63,7 +63,7 @@ Blueprints.ActivatableGizmo = {
 Blueprints.Portal = {
   inherits: 'ActivatableGizmo',
   name: 'Portal',
-  portal: {
+  Portal: {
     targetLevelId: null,
     targetX: null,
     targetY: null

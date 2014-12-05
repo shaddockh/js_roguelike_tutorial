@@ -290,7 +290,7 @@ Mixins.StaticTerrainBuilder = {
    */
   buildTerrainLocation: function (locationInfo, x, y, tiles, TileCatalog, entities) {
     function createEntity(entityType) {
-      if (typeof(entityType) === 'string') {
+      if (typeof (entityType) === 'string') {
         return new Entity(entityType);
       } else {
         return new Entity(entityType.inherits, entityType);
