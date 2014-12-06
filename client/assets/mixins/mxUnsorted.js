@@ -560,7 +560,8 @@ Mixins.Sight = {
 
     var level = this.getMap();
     level.getFov().compute(
-      x, y, sightRadius, function (x, y, radius, visibility) {
+      x, y, sightRadius,
+      function (x, y, radius, visibility) {
         if (x === otherX && y === otherY) {
           found = true;
         }

@@ -37,12 +37,12 @@ playScreen.enter = function () {
 
   function tryanims() {
 
-    // var nextChar = Tile.floorTile.getChar() === '.' ? '?' : '.';
-    //Tile.floorTile.setChar(nextChar);
-    //Game.refresh();
-    //setTimeout(tryanims, 1000);
-  }
-  //tryanims();
+      // var nextChar = Tile.floorTile.getChar() === '.' ? '?' : '.';
+      //Tile.floorTile.setChar(nextChar);
+      //Game.refresh();
+      //setTimeout(tryanims, 1000);
+    }
+    //tryanims();
   Game.refresh();
 
 };

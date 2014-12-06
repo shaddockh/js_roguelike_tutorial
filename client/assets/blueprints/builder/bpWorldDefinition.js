@@ -47,7 +47,7 @@ Blueprints.fungusWorld = {
     leftPortal: 'hole'
   }],
   entryPoint: 'townLevel01'
-  //entryPoint: 'fungus01'
+    //entryPoint: 'fungus01'
 };
 
 module.exports = Blueprints;

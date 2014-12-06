@@ -92,7 +92,7 @@ Mixins.FungusActor = {
           // Check if we can actually spawn at that location, and if so
           // then we grow!
           if (this.getMap().isEmptyFloor(this.getX() + xOffset,
-            this.getY() + yOffset)) {
+              this.getY() + yOffset)) {
 
             var entity = new Entity(this._templateToSpawn);
             entity.setPosition(this.getX() + xOffset, this.getY() + yOffset);

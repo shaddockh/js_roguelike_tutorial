@@ -8,17 +8,17 @@
   },
   "repository": {
     "type": "git",
-    "url": "https://github.com/shaddockh/web-boilerplate.git"
+    "url": "https://github.com/shaddockh/js_roguelike_tutorial.git"
   },
   "author": "T. Shaddock Heath",
   "license": "MIT",
   "bugs": {
-    "url": "https://github.com/shaddockh/web-boilerplate/issues"
+    "url": "https://github.com/shaddockh/js_roguelike_tutorial/issues"
   },
   "devDependencies": {
     "browserify": "latest",
     "debowerify": "^0.8.1",
-    "entity-blueprint-manager": "^0.1.0",
+    "entity-blueprint-manager": "git://github.com/shaddockh/entity-blueprint-manager.git",
     "grunt": "latest",
     "grunt-browserify": "latest",
     "grunt-contrib-connect": "latest",
