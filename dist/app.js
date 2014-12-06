@@ -16556,8 +16556,6 @@ ROT.Path.AStar.prototype._distance = function(x, y) {
 	}
 }
 
-if (module && module.exports) { module.exports.ROT = ROT;}
-
 ; browserify_shim__define__module__export__(typeof ROT != "undefined" ? ROT : window.ROT);
 
 }).call(global, undefined, undefined, undefined, undefined, function defineExport(ex) { module.exports = ex; });
@@ -17517,7 +17515,7 @@ Blueprints.fungusWorld = {
     leftPortal: 'hole'
   }],
   entryPoint: 'townLevel01'
-  //entryPoint: 'fungus01'
+    //entryPoint: 'fungus01'
 };
 
 module.exports = Blueprints;
@@ -18808,7 +18806,7 @@ Mixins.FungusActor = {
           // Check if we can actually spawn at that location, and if so
           // then we grow!
           if (this.getMap().isEmptyFloor(this.getX() + xOffset,
-            this.getY() + yOffset)) {
+              this.getY() + yOffset)) {
 
             var entity = new Entity(this._templateToSpawn);
             entity.setPosition(this.getX() + xOffset, this.getY() + yOffset);
@@ -19916,7 +19914,8 @@ Mixins.Sight = {
 
     var level = this.getMap();
     level.getFov().compute(
-      x, y, sightRadius, function (x, y, radius, visibility) {
+      x, y, sightRadius,
+      function (x, y, radius, visibility) {
         if (x === otherX && y === otherY) {
           found = true;
         }
@@ -21129,12 +21128,12 @@ playScreen.enter = function () {
 
   function tryanims() {
 
-    // var nextChar = Tile.floorTile.getChar() === '.' ? '?' : '.';
-    //Tile.floorTile.setChar(nextChar);
-    //Game.refresh();
-    //setTimeout(tryanims, 1000);
-  }
-  //tryanims();
+      // var nextChar = Tile.floorTile.getChar() === '.' ? '?' : '.';
+      //Tile.floorTile.setChar(nextChar);
+      //Game.refresh();
+      //setTimeout(tryanims, 1000);
+    }
+    //tryanims();
   Game.refresh();
 
 };
