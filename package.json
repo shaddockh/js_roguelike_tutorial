@@ -17,6 +17,7 @@
   },
   "devDependencies": {
     "browserify": "latest",
+    "chai": "^1.10.0",
     "debowerify": "^0.8.1",
     "entity-blueprint-manager": "git://github.com/shaddockh/entity-blueprint-manager.git",
     "grunt": "latest",

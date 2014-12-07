@@ -236,7 +236,7 @@ var WorldBuilder = (function () {
       ignoreCase: true
     });
     console.profile('Build levels');
-    worldBlueprint.levels.forEach(function (levelDefinition) {
+    worldBlueprint.Levels.forEach(function (levelDefinition) {
       var levelBuilder = LevelBuilder.buildLevel(levelDefinition);
       levels.add(levelBuilder.getLevelId(), levelBuilder);
       Singletons.World.addLevel(levelBuilder.getLevel());
@@ -244,7 +244,7 @@ var WorldBuilder = (function () {
     console.profileEnd();
 
     console.profile('Connect levels');
-    worldBlueprint.connections.forEach(function (connectionDefinition) {
+    worldBlueprint.Connections.forEach(function (connectionDefinition) {
       connectionStrategies.get(connectionDefinition.strategy)
         .connect(connectionDefinition, levels.get(connectionDefinition.from), levels.get(connectionDefinition.to));
     });

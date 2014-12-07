@@ -3,7 +3,7 @@ var Blueprints = Blueprints || {};
 Blueprints.fungusWorld = {
   name: 'fungusWorld',
   inherits: '_base',
-  levels: [{
+  Levels: [{
       inherits: 'FungusLevelBuilder',
       LevelBuilder: {
         levelId: 'fungus01',
@@ -25,7 +25,7 @@ Blueprints.fungusWorld = {
     'zombieBossLevel01',
     'townLevel01'
   ],
-  connections: [{
+  Connections: [{
     strategy: 'CaveToCaveRegionConnector',
     from: 'fungus01',
     to: 'fungus02',

@@ -16827,7 +16827,7 @@ var Blueprints = Blueprints || {};
 Blueprints.Blockable = {
   inherits: '_base',
   name: 'Blockable',
-  position: {},
+  Position: {},
   Aspect: {
     blocksPath: true,
     displayOutsideFov: true
@@ -17101,22 +17101,22 @@ var Blueprints = Blueprints || {};
 Blueprints.tile = {
   name: 'tile',
   inherits: '_base',
-  tile: {
+  Tile: {
     blocksLight: true
   },
-  aspect: {}
+  Aspect: {}
 };
 Blueprints.nullTile = {
   name: 'nullTile',
   inherits: 'tile',
-  aspect: {
+  Aspect: {
     screenName: 'Unknown'
   }
 };
 Blueprints.walkableTile = {
   name: 'walkableTile',
   inherits: 'tile',
-  tile: {
+  Tile: {
     isWalkable: true,
     blocksLight: false
   }
@@ -17124,7 +17124,7 @@ Blueprints.walkableTile = {
 Blueprints.floorTile = {
   name: 'floorTile',
   inherits: 'walkableTile',
-  aspect: {
+  Aspect: {
     character: '.',
     foreground: 'silver',
     screenName: 'floor'
@@ -17134,7 +17134,7 @@ Blueprints.floorTile = {
 Blueprints.stairsUpTile = {
   name: 'stairsUpTile',
   inherits: 'walkableTile',
-  aspect: {
+  Aspect: {
     character: '<',
     foreground: 'white',
     screenName: 'stairs up'
@@ -17143,7 +17143,7 @@ Blueprints.stairsUpTile = {
 Blueprints.stairsDownTile = {
   name: 'stairsDownTile',
   inherits: 'walkableTile',
-  aspect: {
+  Aspect: {
     character: '>',
     foreground: 'white',
     screenName: 'stairs up'
@@ -17152,11 +17152,11 @@ Blueprints.stairsDownTile = {
 Blueprints.wallTile = {
   name: 'wallTile',
   inherits: 'tile',
-  tile: {
+  Tile: {
     isDiggable: true,
     reflectivity: 0.3
   },
-  aspect: {
+  Aspect: {
     character: '#',
     foreground: 'silver',
     screenName: 'wall'
@@ -17165,7 +17165,7 @@ Blueprints.wallTile = {
 
 Blueprints.holeTile = {
   inherits: 'walkableTile',
-  aspect: {
+  Aspect: {
     character: 'O',
     foreground: 'white',
     screenName: 'hole'
@@ -17174,13 +17174,13 @@ Blueprints.holeTile = {
 
 Blueprints.waterTile = {
   inherits: 'tile',
-  aspect: {
+  Aspect: {
     character: '~',
     foreground: 'blue',
     obscuredForeground: 'darkblue',
     screenName: 'water'
   },
-  tile: {
+  Tile: {
     isWalkable: false,
     blocksLight: false
   }
@@ -17216,7 +17216,7 @@ Blueprints.Bloodstain = {
 Blueprints.Gizmo = {
   inherits: '_base',
   name: 'Gizmo',
-  position: {}
+  Position: {}
 };
 
 Blueprints.Light = {
@@ -17237,7 +17237,7 @@ Blueprints.BlueLight = {
 Blueprints.StaticObject = {
   inherits: '_base',
   name: 'StaticObject',
-  position: {},
+  Position: {},
   Aspect: {}
 };
 Blueprints.StartingPosition = {
@@ -17248,7 +17248,7 @@ Blueprints.StartingPosition = {
 Blueprints.ActivatableGizmo = {
   inherits: 'gizmo',
   name: 'ActivatableGizmo',
-  activateable: {}
+  Activateable: {}
 };
 
 Blueprints.Portal = {
@@ -17471,7 +17471,7 @@ var Blueprints = Blueprints || {};
 Blueprints.fungusWorld = {
   name: 'fungusWorld',
   inherits: '_base',
-  levels: [{
+  Levels: [{
       inherits: 'FungusLevelBuilder',
       LevelBuilder: {
         levelId: 'fungus01',
@@ -17493,7 +17493,7 @@ Blueprints.fungusWorld = {
     'zombieBossLevel01',
     'townLevel01'
   ],
-  connections: [{
+  Connections: [{
     strategy: 'CaveToCaveRegionConnector',
     from: 'fungus01',
     to: 'fungus02',
@@ -22120,7 +22120,7 @@ var WorldBuilder = (function () {
       ignoreCase: true
     });
     console.profile('Build levels');
-    worldBlueprint.levels.forEach(function (levelDefinition) {
+    worldBlueprint.Levels.forEach(function (levelDefinition) {
       var levelBuilder = LevelBuilder.buildLevel(levelDefinition);
       levels.add(levelBuilder.getLevelId(), levelBuilder);
       Singletons.World.addLevel(levelBuilder.getLevel());
@@ -22128,7 +22128,7 @@ var WorldBuilder = (function () {
     console.profileEnd();
 
     console.profile('Connect levels');
-    worldBlueprint.connections.forEach(function (connectionDefinition) {
+    worldBlueprint.Connections.forEach(function (connectionDefinition) {
       connectionStrategies.get(connectionDefinition.strategy)
         .connect(connectionDefinition, levels.get(connectionDefinition.from), levels.get(connectionDefinition.to));
     });

@@ -3,7 +3,7 @@ var Blueprints = Blueprints || {};
 Blueprints.Blockable = {
   inherits: '_base',
   name: 'Blockable',
-  position: {},
+  Position: {},
   Aspect: {
     blocksPath: true,
     displayOutsideFov: true

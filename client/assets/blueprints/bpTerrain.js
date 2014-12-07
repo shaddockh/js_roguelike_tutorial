@@ -3,22 +3,22 @@ var Blueprints = Blueprints || {};
 Blueprints.tile = {
   name: 'tile',
   inherits: '_base',
-  tile: {
+  Tile: {
     blocksLight: true
   },
-  aspect: {}
+  Aspect: {}
 };
 Blueprints.nullTile = {
   name: 'nullTile',
   inherits: 'tile',
-  aspect: {
+  Aspect: {
     screenName: 'Unknown'
   }
 };
 Blueprints.walkableTile = {
   name: 'walkableTile',
   inherits: 'tile',
-  tile: {
+  Tile: {
     isWalkable: true,
     blocksLight: false
   }
@@ -26,7 +26,7 @@ Blueprints.walkableTile = {
 Blueprints.floorTile = {
   name: 'floorTile',
   inherits: 'walkableTile',
-  aspect: {
+  Aspect: {
     character: '.',
     foreground: 'silver',
     screenName: 'floor'
@@ -36,7 +36,7 @@ Blueprints.floorTile = {
 Blueprints.stairsUpTile = {
   name: 'stairsUpTile',
   inherits: 'walkableTile',
-  aspect: {
+  Aspect: {
     character: '<',
     foreground: 'white',
     screenName: 'stairs up'
@@ -45,7 +45,7 @@ Blueprints.stairsUpTile = {
 Blueprints.stairsDownTile = {
   name: 'stairsDownTile',
   inherits: 'walkableTile',
-  aspect: {
+  Aspect: {
     character: '>',
     foreground: 'white',
     screenName: 'stairs up'
@@ -54,11 +54,11 @@ Blueprints.stairsDownTile = {
 Blueprints.wallTile = {
   name: 'wallTile',
   inherits: 'tile',
-  tile: {
+  Tile: {
     isDiggable: true,
     reflectivity: 0.3
   },
-  aspect: {
+  Aspect: {
     character: '#',
     foreground: 'silver',
     screenName: 'wall'
@@ -67,7 +67,7 @@ Blueprints.wallTile = {
 
 Blueprints.holeTile = {
   inherits: 'walkableTile',
-  aspect: {
+  Aspect: {
     character: 'O',
     foreground: 'white',
     screenName: 'hole'
@@ -76,13 +76,13 @@ Blueprints.holeTile = {
 
 Blueprints.waterTile = {
   inherits: 'tile',
-  aspect: {
+  Aspect: {
     character: '~',
     foreground: 'blue',
     obscuredForeground: 'darkblue',
     screenName: 'water'
   },
-  tile: {
+  Tile: {
     isWalkable: false,
     blocksLight: false
   }

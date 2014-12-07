@@ -25,7 +25,7 @@ Blueprints.Bloodstain = {
 Blueprints.Gizmo = {
   inherits: '_base',
   name: 'Gizmo',
-  position: {}
+  Position: {}
 };
 
 Blueprints.Light = {
@@ -46,7 +46,7 @@ Blueprints.BlueLight = {
 Blueprints.StaticObject = {
   inherits: '_base',
   name: 'StaticObject',
-  position: {},
+  Position: {},
   Aspect: {}
 };
 Blueprints.StartingPosition = {
@@ -57,7 +57,7 @@ Blueprints.StartingPosition = {
 Blueprints.ActivatableGizmo = {
   inherits: 'gizmo',
   name: 'ActivatableGizmo',
-  activateable: {}
+  Activateable: {}
 };
 
 Blueprints.Portal = {
