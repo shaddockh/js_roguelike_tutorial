@@ -27,7 +27,7 @@ suite('Blueprint tests', function () {
     function checkBlueprint(bp) {
       var valid = true;
       for (var mixin in bp) {
-        if (typeof (bp[mixin]) === 'object') {
+        if (typeof (bp[mixin]) === 'object' && typeof (bp[mixin].length) === 'undefined') {
           if (mixin.charAt(0) !== mixin.toUpperCase().charAt(0)) {
             valid = false;
             console.error('Blueprint: "' + bp.name + '" has mixin: "' + mixin + '" that should be capitalized');

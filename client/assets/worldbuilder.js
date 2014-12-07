@@ -5,6 +5,7 @@ var Singletons = require('./singletons');
 var Game = require('./game');
 var Entity = require('./entity');
 var Dictionary = require('entity-blueprint-manager').Dictionary;
+var _ = require('lodash');
 
 function build2DArray(width, height, defaultValue) {
 
@@ -236,7 +237,7 @@ var WorldBuilder = (function () {
       ignoreCase: true
     });
     console.profile('Build levels');
-    worldBlueprint.Levels.forEach(function (levelDefinition) {
+    _.forEach(worldBlueprint.levels, function (levelDefinition) {
       var levelBuilder = LevelBuilder.buildLevel(levelDefinition);
       levels.add(levelBuilder.getLevelId(), levelBuilder);
       Singletons.World.addLevel(levelBuilder.getLevel());
@@ -244,7 +245,7 @@ var WorldBuilder = (function () {
     console.profileEnd();
 
     console.profile('Connect levels');
-    worldBlueprint.Connections.forEach(function (connectionDefinition) {
+    _.forEach(worldBlueprint.connections, function (connectionDefinition) {
       connectionStrategies.get(connectionDefinition.strategy)
         .connect(connectionDefinition, levels.get(connectionDefinition.from), levels.get(connectionDefinition.to));
     });

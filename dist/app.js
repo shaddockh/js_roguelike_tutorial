@@ -17471,7 +17471,7 @@ var Blueprints = Blueprints || {};
 Blueprints.fungusWorld = {
   name: 'fungusWorld',
   inherits: '_base',
-  Levels: [{
+  levels: [{
       inherits: 'FungusLevelBuilder',
       LevelBuilder: {
         levelId: 'fungus01',
@@ -17493,7 +17493,7 @@ Blueprints.fungusWorld = {
     'zombieBossLevel01',
     'townLevel01'
   ],
-  Connections: [{
+  connections: [{
     strategy: 'CaveToCaveRegionConnector',
     from: 'fungus01',
     to: 'fungus02',
@@ -21889,6 +21889,7 @@ var Singletons = require('./singletons');
 var Game = require('./game');
 var Entity = require('./entity');
 var Dictionary = require('entity-blueprint-manager').Dictionary;
+var _ = require('lodash');
 
 function build2DArray(width, height, defaultValue) {
 
@@ -22120,7 +22121,7 @@ var WorldBuilder = (function () {
       ignoreCase: true
     });
     console.profile('Build levels');
-    worldBlueprint.Levels.forEach(function (levelDefinition) {
+    _.forEach(worldBlueprint.levels, function (levelDefinition) {
       var levelBuilder = LevelBuilder.buildLevel(levelDefinition);
       levels.add(levelBuilder.getLevelId(), levelBuilder);
       Singletons.World.addLevel(levelBuilder.getLevel());
@@ -22128,7 +22129,7 @@ var WorldBuilder = (function () {
     console.profileEnd();
 
     console.profile('Connect levels');
-    worldBlueprint.Connections.forEach(function (connectionDefinition) {
+    _.forEach(worldBlueprint.connections, function (connectionDefinition) {
       connectionStrategies.get(connectionDefinition.strategy)
         .connect(connectionDefinition, levels.get(connectionDefinition.from), levels.get(connectionDefinition.to));
     });
@@ -22146,7 +22147,7 @@ var WorldBuilder = (function () {
 
 module.exports.WorldBuilder = WorldBuilder;
 
-},{"./entity":14,"./game":15,"./level":17,"./singletons":46,"entity-blueprint-manager":54,"rot":3}],51:[function(require,module,exports){
+},{"./entity":14,"./game":15,"./level":17,"./singletons":46,"entity-blueprint-manager":54,"lodash":58,"rot":3}],51:[function(require,module,exports){
 var $ = require("./../../bower_components/jquery/dist/jquery.js");
 var Dictionary = require('entity-blueprint-manager').Dictionary;
 
